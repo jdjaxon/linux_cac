@@ -14,7 +14,6 @@ A simple walkthrough for how to consistently configure DOD CACs on Linux.
 - [ ] Find a way to automate the installation of DOD certificates in Firefox
 
 ## Supported Operating Systems
----
 |   OS   | Versions          |
 |:------:|:--------:         |
 | Ubuntu | 20.04 -> 21.04    |
