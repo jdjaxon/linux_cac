@@ -1,29 +1,31 @@
-# linux_cac
-A simple walkthrough for how to consistently configure DOD CACs on Ubuntu.
----
-title: "Linux CAC Setup"
-linkTitle: "Linux CAC Setup"
-weight: 4
-type: docs
-description: >
-    A walkthrough of how to setup CAC usage on Linux.
----
+# Linux CAC Configuration
+A simple walkthrough for how to consistently configure DOD CACs on Linux.
 
-## Supported Methods
+## Table of Contents
+1. [Supported Operating Systems](#supported-operating-systems)
+1. [Supported Browsers](#supported-browsers)
+1. [Ubuntu and PopOS!](ubuntu-and-popos!)
+    1. [Staging](#staging)
+    1. [Browser Configuration](#browser-configuration)
+        1. [Google Chrome](#google-chrome)
+        1. [Firefox](#firefox)
+
+## TODOs
+- [ ] Find a way to automate the installation of DOD certificates in Firefox
+
+## Supported Operating Systems
 ---
-|   OS   | Versions |
-|:------:|:--------:|
-| Ubuntu | 20.04    |
-| PopOS! | 21.04    |
-| Arch   | latest   |
+|   OS   | Versions          |
+|:------:|:--------:         |
+| Ubuntu | 20.04 -> 21.04    |
+| PopOS! | 21.04             |
 
 
-**Supported Browsers**
+## Supported Browsers
 - Chrome
 - Firefox
 
 ## Ubuntu and PopOS!
----
 ### Staging
 1. Download DOD certs from DISA [here](https://militarycac.com/maccerts/AllCerts.zip).
 2. Run the following command to install the CAC middleware:
@@ -39,7 +41,7 @@ pcsc_scan
 ```
 find / -name libcackey.so 2>/dev/null
 ```
-`libcackey.so` should be in the following location:
+**NOTE:** `libcackey.so` should be in the following location:
 ```
 /usr/lib64/libcackey.so
 ```
