@@ -2,7 +2,7 @@
 A simple walkthrough for how to consistently configure DOD CACs on Linux.
 
 ## Table of Contents
-1. [Supported Operating Systems](#supported-operating-systems)
+1. [Supported Distributions](#supported-distributions)
 1. [Supported Browsers](#supported-browsers)
 1. [Ubuntu and PopOS!](ubuntu-and-popos!)
     1. [Staging](#staging)
@@ -13,11 +13,11 @@ A simple walkthrough for how to consistently configure DOD CACs on Linux.
 ## TODOs
 - [ ] Find a way to automate the installation of DOD certificates in Firefox
 
-## Supported Operating Systems
-|   OS   | Versions          |
-|:------:|:--------:         |
-| Ubuntu | 20.04 -> 21.04    |
-| PopOS! | 21.04             |
+## Supported Distributions
+| OS | Versions |
+|:-:|:-:|
+| Ubuntu | 20.04 -> 21.04 |
+| PopOS! | 21.04 |
 
 
 ## Supported Browsers
@@ -40,7 +40,7 @@ pcsc_scan
 ```
 find / -name libcackey.so 2>/dev/null
 ```
-**NOTE:** `libcackey.so` should be in the following location:
+- **NOTE:** `libcackey.so` should be in the following location:
 ```
 /usr/lib64/libcackey.so
 ```
