@@ -9,6 +9,8 @@ A simple walkthrough for how to consistently configure DOD CACs on Linux.
     1. [Browser Configuration](#browser-configuration)
         1. [Google Chrome](#google-chrome)
         1. [Firefox](#firefox)
+1. [Known Issues](#known-issues)
+1. [Additional Resources](#additional-resources)
 
 ## TODOs
 - [ ] Find a way to automate the installation of DOD certificates in Firefox
@@ -41,8 +43,10 @@ pcsc_scan
 ```
 find / -name libcackey.so 2>/dev/null
 ```
-- **NOTE:** `libcackey.so` should be in the following location:
+- **NOTE:** `libcackey.so` should be in one of the following locations:
 ```
+/usr/lib/libcackey.so
+        OR
 /usr/lib64/libcackey.so
 ```
 6. If `apt` updates cackey from 7.5 to 7.10, it will move `libcackey.so` to a different location.
@@ -95,4 +99,10 @@ for n in *.cer; do certutil -d sql:$HOME/.pki/nssdb -A -t TC -n $n -i $n; done
 4. Make the "Module Name" CAC Module and then browse to the location of the `libcackey.so` module. Click "OK" when done.
 3. Next, click "View Certificates..."
 4. Select the "Authorities" tab.
-5. Individually "Import" all the certs inside the DISA `AllCerts` folder (there are many).
+5. Individually "Import" all the certs inside the DISA `AllCerts` folder (there are quite a few).
+
+## Known Issues
+- CAC needs to be inserted before starting Firefox
+
+## Additional Resources
+- https://militarycac.com/linux.htm (this was my starting point)
