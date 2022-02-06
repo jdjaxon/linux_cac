@@ -4,7 +4,7 @@ A simple walkthrough for how to consistently configure DOD CACs on Linux. The gu
 ## Table of Contents
 1. [Supported Distributions](#supported-distributions)
 1. [Supported Browsers](#supported-browsers)
-1. [Ubuntu and PopOS!](ubuntu-and-popos!)
+1. [Ubuntu and PopOS!](#ubuntu-and-popos!)
     1. [Staging](#staging)
     1. [Browser Configuration](#browser-configuration)
         1. [Google Chrome](#google-chrome)
