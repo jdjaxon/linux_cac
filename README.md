@@ -1,5 +1,5 @@
 # Linux CAC Configuration
-A simple walkthrough for how to consistently configure DOD CACs on Linux.
+A simple walkthrough for how to consistently configure DOD CACs on Linux. The guide currently only covers Ubuntu and PopOS. I created the guide using militarycac.com and trial and error.
 
 ## Table of Contents
 1. [Supported Distributions](#supported-distributions)
