@@ -57,7 +57,7 @@ sudo apt-mark hold cackey
 - **NOTE**: The cackey package will still show as upgradeable.
 
 
-### Browser-specific Configuration
+### Browser Configuration
 ---
 #### Google Chrome
 1. Run the following commands to configure the database:
