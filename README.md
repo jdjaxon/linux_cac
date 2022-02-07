@@ -103,6 +103,7 @@ for n in *.cer; do certutil -d sql:$HOME/.pki/nssdb -A -t TC -n $n -i $n; done
 
 ## Known Issues
 - CAC needs to be inserted before starting Firefox
+- Firefox goes into "loading loop" when trying to log in to Microsoft Teams
 
 ## Additional Resources
 - https://militarycac.com/linux.htm (this was my starting point)
