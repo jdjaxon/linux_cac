@@ -2,6 +2,11 @@
 A simple walkthrough for how to consistently configure DOD CACs on Linux. The guide currently only covers Ubuntu and PopOS. I created the guide using https://militarycac.com/linux.htm and trial and error.
 
 ## Table of Contents
+<details>
+<summary>
+<u>Click to Expand</u>
+</summary>
+
 1. [Supported Distributions](#supported-distributions)
 1. [Supported Browsers](#supported-browsers)
 1. [Ubuntu and PopOS](#ubuntu-and-popos)
@@ -11,6 +16,7 @@ A simple walkthrough for how to consistently configure DOD CACs on Linux. The gu
         1. [Firefox](#firefox)
 1. [Known Issues](#known-issues)
 1. [Additional Resources](#additional-resources)
+</details>
 
 ## TODOs
 - [ ] Find a way to automate the installation of DOD certificates in Firefox
@@ -107,3 +113,4 @@ for n in *.cer; do certutil -d sql:$HOME/.pki/nssdb -A -t TC -n $n -i $n; done
 
 ## Additional Resources
 - https://militarycac.com/linux.htm (this was my starting point)
+- https://chromium.googlesource.com/chromium/src.git/+/refs/heads/main/docs/linux/cert_management.md
