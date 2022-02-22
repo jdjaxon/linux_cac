@@ -1,10 +1,12 @@
 # Linux CAC Configuration
-A simple walkthrough for how to consistently configure DOD CACs on Linux. The guide currently only covers Ubuntu and PopOS. I created the guide using https://militarycac.com/linux.htm and trial and error.
+A simple walkthrough for how to consistently configure DOD CACs on Linux. The
+guide currently only covers Ubuntu and PopOS. I created the guide using
+https://militarycac.com/linux.htm and trial and error.
 
 ## Table of Contents
 <details>
 <summary>
-<u>Click to Expand</u>
+<b>Click to Expand</b>
 </summary>
 
 1. [Supported Distributions](#supported-distributions)
@@ -24,11 +26,13 @@ A simple walkthrough for how to consistently configure DOD CACs on Linux. The gu
     - [ ] Find a way to automate the installation of DOD certificates in Firefox
 
 ## Supported Distributions
-| OS | Versions |
-|:-:|:-:|
-| Ubuntu | 20.04 -> 21.04 |
-| PopOS! | 21.04 |
+Regardless of how similar two distributions may be, I will only list
+distributions and versions here that I know have been tested with this method.
 
+| Distribution | Versions |
+|:-:|:-:|
+| Ubuntu | 20.04 |
+| PopOS! | 21.04 |
 
 ## Supported Browsers
 - Chrome
