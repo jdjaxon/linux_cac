@@ -14,8 +14,9 @@ A simple walkthrough for how to consistently configure DOD CACs on Linux. The gu
     1. [Browser Configuration](#browser-configuration)
         1. [Google Chrome](#google-chrome)
         1. [Firefox](#firefox)
+            1. [Microsoft Teams](#microsoft-teams)
 1. [Known Issues](#known-issues)
-1. [Additional Resources](#additional-resources)
+1. [Resources](#resources)
 </details>
 
 ## TODOs
@@ -72,7 +73,6 @@ modutil -dbdir sql:$HOME/.pki/nssdb/ -add "CAC Module" -libfile <libcackey.so's 
 modutil -dbdir sql:$HOME/.pki/nssdb/ -list
 ```
 - **NOTE**: You should see output that resembles the following:
-
 ```
     1. NSS Internal PKCS #11 Module
          slots: 2 slots attached
@@ -100,17 +100,41 @@ for n in *.cer; do certutil -d sql:$HOME/.pki/nssdb -A -t TC -n $n -i $n; done
 
 #### Firefox
 1. Open the Firefox browser.
-2. Go to "Settings" -> "Privacy and Security"
-3. Near the bottom, click "Security Devices...", then select "Load"
-4. Make the "Module Name" CAC Module and then browse to the location of the `libcackey.so` module. Click "OK" when done.
-3. Next, click "View Certificates..."
-4. Select the "Authorities" tab.
-5. Individually "Import" all the certs inside the DISA `AllCerts` folder (there are quite a few).
+2. Go to `Settings` -> `Privacy and Security`
+3. Near the bottom, click `Security Devices...`, then select `Load`
+4. Make the `Module Name` CAC Module and then browse to the location of the `libcackey.so` module. Click `OK` when done.
+3. Next, click `View Certificates...`
+4. Select the `Authorities` tab.
+5. Individually `Import` all the certs inside the DISA `AllCerts` folder (there are quite a few).
+
+##### Microsoft Teams
+1. In the Firefox Settings window, select the `Privacy & Security` tab.
+2. Under `Cookies and Site Data`, select `Manage Exceptions`.
+3. In the `Address of website` text box, enter the following URLs, and then select `Allow`.
+```
+    https://microsoft.com
+    https://microsoftonline.com
+    https://teams.skype.com
+    https://teams.microsoft.com
+    https://sfbassets.com
+    https://skypeforbusiness.com
+```
+4. Select `Save Changes`.
+
+- **NOTE:** `strict` security settings in Firefox may cause a loading loop
+
+See the official documentation for this issue
+[here](https://docs.microsoft.com/en-us/microsoftteams/troubleshoot/teams-sign-in/sign-in-loop#mozilla-firefox).
+
 
 ## Known Issues
 - CAC needs to be inserted before starting Firefox
-- Firefox goes into "loading loop" when trying to log in to Microsoft Teams
 
-## Additional Resources
+## Resources
 - https://militarycac.com/linux.htm (this was my starting point)
 - https://chromium.googlesource.com/chromium/src.git/+/refs/heads/main/docs/linux/cert_management.md
+- https://firefox-source-docs.mozilla.org/security/nss/legacy/tools/nss_tools_certutil/index.html
+- https://firefox-source-docs.mozilla.org/security/nss/legacy/tools/certutil/index.html
+- https://askubuntu.com/questions/244582/add-certificate-authorities-system-wide-on-firefox
+- https://stackoverflow.com/questions/1435000/programmatically-install-certificate-into-mozilla
+- https://docs.microsoft.com/en-us/microsoftteams/troubleshoot/teams-sign-in/sign-in-loop#mozilla-firefox
