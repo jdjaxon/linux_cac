@@ -19,8 +19,8 @@ A simple walkthrough for how to consistently configure DOD CACs on Linux. The gu
 </details>
 
 ## TODOs
-- [ ] Find a way to automate the installation of DOD certificates in Firefox
-- [ ] Script the entire setup process
+- [ ] Script as much of the setup process as possible
+    - [ ] Find a way to automate the installation of DOD certificates in Firefox
 
 ## Supported Distributions
 | OS | Versions |
