@@ -12,11 +12,13 @@ https://militarycac.com/linux.htm and trial and error.
 1. [Supported Distributions](#supported-distributions)
 1. [Supported Browsers](#supported-browsers)
 1. [Ubuntu and PopOS](#ubuntu-and-popos)
-    1. [Staging](#staging)
-    1. [Browser Configuration](#browser-configuration)
-        1. [Google Chrome](#google-chrome)
-        1. [Firefox](#firefox)
-            1. [Microsoft Teams](#microsoft-teams)
+    1. [Automated Installation](#automated-installation)
+    1. [Manual Installation](#manual-installation)
+        1. [Staging](#staging)
+        1. [Browser Configuration](#browser-configuration)
+            1. [Google Chrome](#google-chrome)
+            1. [Firefox](#firefox)
+                1. [Microsoft Teams](#microsoft-teams)
 1. [Known Issues](#known-issues)
 1. [Resources](#resources)
 </details>
@@ -24,6 +26,7 @@ https://militarycac.com/linux.htm and trial and error.
 ## TODOs
 - [ ] Script as much of the setup process as possible
     - [x] Find a way to automate the installation of DOD certificates in Firefox
+- [ ] Fix links in the `Automated Installation` section once script is complete
 
 ## Supported Distributions
 Regardless of how similar two distributions may be, I will only list
@@ -39,7 +42,20 @@ distributions and versions here that I know have been tested with this method.
 - Firefox
 
 ## Ubuntu and PopOS
-### Staging
+
+### Automated Installation
+The automated installation requires `wget` and `unzip` to run and will install both during the setup. If you don't want either tool, remove it after the setup is complete using `sudo apt remove <command>`.
+
+This script requires root privileges. Feel free to review the script [here](https://raw.githubusercontent.com/jdjaxon/linux_cac/scripting-setup-process/cac_setup.sh) if this makes you uncomfortable.
+
+To run the setup script, use the following command:
+```
+sudo sh -c "$(wget https://raw.githubusercontent.com/jdjaxon/linux_cac/main/cac_setup.sh)"
+```
+
+
+### Manual Installation
+#### Staging
 1. Download DOD certs from DISA [here](https://militarycac.com/maccerts/AllCerts.zip).
 2. Run the following command to install the CAC middleware:
 ```
@@ -68,9 +84,9 @@ sudo apt-mark hold cackey
 - **NOTE**: The cackey package will still show as upgradeable.
 
 
-### Browser Configuration
+#### Browser Configuration
 ---
-#### Google Chrome
+##### Google Chrome
 1. Run the following commands to configure the database:
 ```
 modutil -dbdir sql:$HOME/.pki/nssdb/ -add "CAC Module" -libfile <libcackey.so's location>
@@ -102,7 +118,7 @@ modutil -dbdir sql:$HOME/.pki/nssdb/ -list
 for n in *.cer; do certutil -d sql:$HOME/.pki/nssdb -A -t TC -n $n -i $n; done
 ```
 
-#### Firefox
+##### Firefox
 1. Open the Firefox browser.
 2. Go to `Settings` -> `Privacy and Security`
 3. Near the bottom, click `Security Devices...`, then select `Load`
@@ -111,7 +127,7 @@ for n in *.cer; do certutil -d sql:$HOME/.pki/nssdb -A -t TC -n $n -i $n; done
 4. Select the `Authorities` tab.
 5. Individually `Import` all the certs inside the DISA `AllCerts` folder (there are quite a few).
 
-##### Microsoft Teams
+###### Microsoft Teams
 1. In the Firefox Settings window, select the `Privacy & Security` tab.
 2. Under `Cookies and Site Data`, select `Manage Exceptions`.
 3. In the `Address of website` text box, enter the following URLs, and then select `Allow`.
