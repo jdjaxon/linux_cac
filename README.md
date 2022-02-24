@@ -48,6 +48,8 @@ The automated installation requires `wget` and `unzip` to run and will install b
 
 This script requires root privileges. Feel free to review the script [here](https://raw.githubusercontent.com/jdjaxon/linux_cac/scripting-setup-process/cac_setup.sh) if this makes you uncomfortable.
 
+**NOTE:** this script uses the 64-bit version of the cackey package.
+
 To run the setup script, use the following command:
 ```
 sudo sh -c "$(wget https://raw.githubusercontent.com/jdjaxon/linux_cac/main/cac_setup.sh)"
