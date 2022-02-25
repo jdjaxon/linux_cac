@@ -117,7 +117,7 @@ modutil -dbdir sql:$HOME/.pki/nssdb/ -list
 2. `cd` inside the DISA `AllCerts` folder
 3. Run the following command:
 ```
-for n in *.cer; do certutil -d sql:$HOME/.pki/nssdb -A -t TC -n $n -i $n; done
+for cert in *.cer; do certutil -d sql:$HOME/.pki/nssdb -A -t TC -n $cert -i $cert; done
 ```
 
 ##### Firefox
