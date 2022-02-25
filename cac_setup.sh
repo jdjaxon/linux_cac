@@ -31,7 +31,7 @@ main ()
     # Install middleware and necessary utilities
     echo "Installing middleware..."
     apt update
-    DEBIAN_FRONTEND=noninteractive apt install -y libpcsclite1 pcscd libccid libpcsc-perl pcsc-tools unzip libnss3-tools
+    DEBIAN_FRONTEND=noninteractive apt install -y libpcsclite1 pcscd libccid libpcsc-perl pcsc-tools unzip libnss3-tools > /dev/null 2>1
     echo "Done"
 
     # Pull all necessary files
@@ -42,7 +42,7 @@ main ()
 
     # Install libcackey.
     echo "Installing libcackey..."
-    if dpkg -i "$DWNLD_DIR/$PKG_FILENAME"
+    if dpkg -i "$DWNLD_DIR/$PKG_FILENAME" > /dev/null 2>1
     then
         echo "Done."
     else
@@ -74,6 +74,7 @@ main ()
             echo "Importing DoD certificates for Chrome..."
             for cert in "$DWNLD_DIR/$CERT_FILENAME/"*."$CERT_EXTENSION"
             do
+                echo "Importing $cert"
                 certutil -d sql:"$ChromeCertDB" -A -t TC -n "$cert" -i "$cert"
             done
             echo "Done."
@@ -92,6 +93,7 @@ main ()
             echo "Importing DoD certificates for Firefox..."
             for cert in "$DWNLD_DIR/$CERT_FILENAME/"*."$CERT_EXTENSION"
             do
+                echo "Importing $cert"
                 certutil -d sql:"$FirefoxCertDB" -A -t TC -n "$cert" -i "$cert"
             done
             echo "Done."
@@ -100,7 +102,11 @@ main ()
         fi
     fi
 
-    # TODO: find a way to create a security module in Firefox from terminal
+    # TODO: test this
+    if libfile=$(find /usr/lib64 -name libcackey.so 2>/dev/null)
+    then
+        modutil -add "CAC Module" -libfile "$libfile"
+    fi
 
     # Remove artifacts
     echo "Removing artifacts..."
