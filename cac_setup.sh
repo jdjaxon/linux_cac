@@ -42,7 +42,7 @@ main ()
 
     # Install libcackey.
     echo "Installing libcackey..."
-    if dpkg -i "$DWNLD_DIR/$PKG_FILENAME" &>/dev/null
+    if dpkg -i "$DWNLD_DIR/$PKG_FILENAME":w
     then
         echo "Done."
     else
@@ -65,7 +65,7 @@ main ()
     unzip "$DWNLD_DIR/$BUNDLE_FILENAME" -d "$DWNLD_DIR/$CERT_FILENAME"
 
     # Check for Chrome
-    if google-chrome --version &>/dev/null
+    if google-chrome --version
     then
         # Locate Firefox's database directory in the user's profile
         if ChromeCertDB=$(dirname "$(find "$HOME"/.pki -name "$NSSDB_FILENAME")")
@@ -83,7 +83,7 @@ main ()
     fi
 
     # Check for Firefox
-    if firefox --version &>/dev/null
+    if firefox --version
     then
         # Locate Firefox's database directory in the user's profile
         if FirefoxCertDB=$(dirname "$(find "$HOME"/.mozilla -name "$NSSDB_FILENAME")")
