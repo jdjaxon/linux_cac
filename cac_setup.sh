@@ -1,17 +1,20 @@
 #!/usr/bin/env bash
 
 # cac_setup.sh
-#
 # Author: Jeremy Jackson
 # Date: 24 Feb 2022
 # Description: Setup a Linux environment for Common Access Card use.
 
 main ()
 {
-    EXIT_SUCCESS=0
-    EXIT_FAILURE=1
-    DWNLD_DIR=/tmp
-    ROOT_UID=0      # Only users with $UID 0 have root privileges
+    EXIT_SUCCESS=0     # Success exit code
+    E_INSTALL=85       # Installation failed
+    E_NOTROOT=86       # Non-root exit error
+    ROOT_UID=0         # Only users with $UID 0 have root privileges
+    DWNLD_DIR="/tmp"   # Reliable location to place artifacts
+
+    CERT_EXTENSION="cer"
+    NSSDB_FILENAME="cert9.db"
     CERT_FILENAME="AllCerts"
     BUNDLE_FILENAME="AllCerts.zip"
     CERT_URL="http://militarycac.com/maccerts/$BUNDLE_FILENAME"
@@ -19,43 +22,59 @@ main ()
     CACKEY_URL="http://cackey.rkeene.org/download/0.7.5/$PKG_FILENAME"
 
     # Ensure the script is ran as root
-    # TODO uncomment
-    #if [ "$UID" -ne "$ROOT_UID" ]
-    #then
-        #echo "Please run this script as root."
-        #exit $E_NOTROOT
-    #fi
+    if [ "$UID" -ne "$ROOT_UID" ]
+    then
+        echo "Please run this script as root."
+        exit "$E_NOTROOT"
+    fi
 
     # Install middleware and necessary utilities
-    # TODO uncomment
-    #echo "Installing middleware..."
-    #apt update
-    #DEBIAN_FRONTEND=noninteractive apt install -y libpcsclite1 pcscd libccid libpcsc-perl pcsc-tools wget unzip
-    #echo "Done"
+    echo "Installing middleware..."
+    apt update
+    DEBIAN_FRONTEND=noninteractive apt install -y libpcsclite1 pcscd libccid libpcsc-perl pcsc-tools unzip &>/dev/null
+    echo "Done"
 
     # Pull all necessary files
-    echo -e "Downloading DoD certificates and Cackey package...\n"
-    wget -P $DWNLD_DIR $CERT_URL
-    wget -P $DWNLD_DIR $CACKEY_URL
-    echo -e "Done\n"
+    echo "Downloading DoD certificates and Cackey package..."
+    wget -qP "$DWNLD_DIR" "$CERT_URL"
+    wget -qP "$DWNLD_DIR" "$CACKEY_URL"
+    echo "Done."
+
+    # Install libcackey.
+    echo "Installing libcackey..."
+    if dpkg -i "$DWNLD_DIR/$PKG_FILENAME" &>/dev/null
+    then
+        echo "Done."
+    else
+        echo "error: installation failed. Exitting..."
+        exit "$E_INSTALL"
+    fi
+
+    # Prevent cackey from upgrading
+    # If cackey upgrades from 7.5 to 7.10, it moves libcackey.so to a different location
+    # breaking Firefox.
+    if apt-mark hold cackey
+    then
+        echo "Hold placed on cackey package."
+    else
+        echo "error: failed to place hold on cackey package."
+    fi
 
     # Unzip cert bundle
-    mkdir -p $DWNLD_DIR/$CERT_FILENAME
-    unzip $DWNLD_DIR/$BUNDLE_FILENAME -d $DWNLD_DIR/$CERT_FILENAME
+    mkdir -p "$DWNLD_DIR/$CERT_FILENAME"
+    unzip "$DWNLD_DIR/$BUNDLE_FILENAME" -d "$DWNLD_DIR/$CERT_FILENAME"
 
     # Check for Chrome
-    _=google-chrome --version
-    if [ $? -eq 0 ]
+    if google-chrome --version &>/dev/null
     then
         # Locate Firefox's database directory in the user's profile
-        ChromeCertDB=$(dirname $(find $HOME/.pki -name cert*.db))
-        if [ $? -eq 0 ]
+        if ChromeCertDB=$(dirname "$(find "$HOME"/.pki -name "$NSSDB_FILENAME")")
         then
             # Import DoD certificates
             echo "Importing DoD certificates for Chrome..."
-            for cert in $DWNLD_DIR/$CERT_FILENAME/*.cer
+            for cert in "$DWNLD_DIR/$CERT_FILENAME/"*."$CERT_EXTENSION"
             do
-                certutil -d sql:$ChromeCertDB -A -t TC -n $cert -i $cert
+                certutil -d sql:"$ChromeCertDB" -A -t TC -n "$cert" -i "$cert"
             done
             echo "Done."
         else
@@ -64,18 +83,16 @@ main ()
     fi
 
     # Check for Firefox
-    _=firefox --version
-    if [ $? -eq 0 ]
+    if firefox --version &>/dev/null
     then
         # Locate Firefox's database directory in the user's profile
-        FirefoxCertDB=$(dirname $(find $HOME/.mozilla -name cert*.db))
-        if [ $? -eq 0 ]
+        if FirefoxCertDB=$(dirname "$(find "$HOME"/.mozilla -name "$NSSDB_FILENAME")")
         then
             # Import DoD certificates
             echo "Importing DoD certificates for Firefox..."
-            for cert in $DWNLD_DIR/$CERT_FILENAME/*.cer
+            for cert in "$DWNLD_DIR/$CERT_FILENAME/"*."$CERT_EXTENSION"
             do
-                certutil -d sql:$FirefoxCertDB -A -t TC -n $cert -i $cert
+                certutil -d sql:"$FirefoxCertDB" -A -t TC -n "$cert" -i "$cert"
             done
             echo "Done."
         else
@@ -83,12 +100,19 @@ main ()
         fi
     fi
 
-    # Remove artifacts
-    echo -e "Removing artifacts...\n"
-    rm -rf $DWNLD_DIR/{$BUNDLE_FILENAME,$CERT_FILENAME,$PKG_FILENAME}
-    echo -e "Done\n"
+    # TODO: find a way to create a security module in Firefox from terminal
 
-    exit EXIT_SUCCESS
+    # Remove artifacts
+    echo "Removing artifacts..."
+    rm -rf "${DWNLD_DIR:?}"/{"$BUNDLE_FILENAME","$CERT_FILENAME","$PKG_FILENAME"}
+    if [ "$?" -ne "$EXIT_SUCCESS" ]
+    then
+        echo "error: failed to remove artifacts"
+    else
+        echo "Done."
+    fi
+
+    exit "$EXIT_SUCCESS"
 }
 
 main
