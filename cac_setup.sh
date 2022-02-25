@@ -31,7 +31,7 @@ main ()
     # Install middleware and necessary utilities
     echo "Installing middleware..."
     apt update
-    DEBIAN_FRONTEND=noninteractive apt install -y libpcsclite1 pcscd libccid libpcsc-perl pcsc-tools unzip &>/dev/null
+    DEBIAN_FRONTEND=noninteractive apt install -y libpcsclite1 pcscd libccid libpcsc-perl pcsc-tools unzip libnss3-tools
     echo "Done"
 
     # Pull all necessary files
