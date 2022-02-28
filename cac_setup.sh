@@ -28,7 +28,7 @@ main ()
     CACKEY_URL="http://cackey.rkeene.org/download/0.7.5/$PKG_FILENAME"
 
     # Ensure the script is ran as root
-    if [ "$UID" -ne "$ROOT_UID" ]
+    if [ "${EUID:-$(id -u)}" -ne "$ROOT_UID" ]
     then
         echo "Please run this script as root."
         exit "$E_NOTROOT"
@@ -77,7 +77,7 @@ main ()
         if chrome_cert_DB=$(dirname "$(find "$ORIG_HOME"/.pki/nssdb -name "$NSSDB_FILENAME")")
         then
             # Import DoD certificates
-            echo "\nImporting DoD certificates for Chrome..."
+            echo "Importing DoD certificates for Chrome..."
             for cert in "$DWNLD_DIR/$CERT_FILENAME/"*."$CERT_EXTENSION"
             do
                 echo "Importing $cert"
@@ -87,7 +87,7 @@ main ()
             # Point DB security module to libcackey.so with the PKCS file, if it exists.
             if [ -f "$chrome_cert_DB/$PKCS_FILENAME" ]
             then
-                echo "library=/usr/lib64/libcackey.so\nname=CAC Module" >> "$chrome_cert_DB/$PKCS_FILENAME"
+                printf "library=/usr/lib64/libcackey.so\nname=CAC Module\n" >> "$chrome_cert_DB/$PKCS_FILENAME"
             fi
 
             echo "Done."
@@ -103,7 +103,7 @@ main ()
         if firefox_cert_DB=$(dirname "$(find "$ORIG_HOME"/.mozilla/firefox -name "$NSSDB_FILENAME")")
         then
             # Import DoD certificates
-            echo "\nImporting DoD certificates for Firefox..."
+            echo "Importing DoD certificates for Firefox..."
             for cert in "$DWNLD_DIR/$CERT_FILENAME/"*."$CERT_EXTENSION"
             do
                 echo "Importing $cert"
@@ -113,7 +113,7 @@ main ()
             # Point DB security module to libcackey.so with the PKCS file, if it exists.
             if [ -f "$firefox_cert_DB/$PKCS_FILENAME" ]
             then
-                echo "library=/usr/lib64/libcackey.so\nname=CAC Module" >> "$firefox_cert_DB/$PKCS_FILENAME"
+                echo "library=/usr/lib64/libcackey.so\nname=CAC Module\n" >> "$firefox_cert_DB/$PKCS_FILENAME"
             fi
 
             echo "Done."
