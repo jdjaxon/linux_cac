@@ -37,7 +37,7 @@ main ()
     # Install middleware and necessary utilities
     echo "Installing middleware..."
     apt update
-    DEBIAN_FRONTEND=noninteractive apt install -y libpcsclite1 pcscd libccid libpcsc-perl pcsc-tools unzip libnss3-tools > /dev/null 2>1
+    DEBIAN_FRONTEND=noninteractive apt install -y libpcsclite1 pcscd libccid libpcsc-perl pcsc-tools unzip libnss3-tools
     echo "Done"
 
     # Pull all necessary files
@@ -48,7 +48,7 @@ main ()
 
     # Install libcackey.
     echo "Installing libcackey..."
-    if dpkg -i "$DWNLD_DIR/$PKG_FILENAME" &> /dev/null
+    if dpkg -i "$DWNLD_DIR/$PKG_FILENAME" &>/dev/null
     then
         echo "Done."
     else
