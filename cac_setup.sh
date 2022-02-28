@@ -7,13 +7,16 @@
 
 main ()
 {
+    ERR_COLOR='\033[0;31m'
     EXIT_SUCCESS=0     # Success exit code
     E_INSTALL=85       # Installation failed
     E_NOTROOT=86       # Non-root exit error
     ROOT_UID=0         # Only users with $UID 0 have root privileges
     DWNLD_DIR="/tmp"   # Reliable location to place artifacts
+
     ORIG_HOME="$(getent passwd "$SUDO_USER" | cut -d: -f6)"
     CERT_EXTENSION="cer"
+    PKCS_FILENAME="pkcs11.txt"
     NSSDB_FILENAME="cert9.db"
     CERT_FILENAME="AllCerts"
     BUNDLE_FILENAME="AllCerts.zip"
@@ -42,22 +45,22 @@ main ()
 
     # Install libcackey.
     echo "Installing libcackey..."
-    if dpkg -i "$DWNLD_DIR/$PKG_FILENAME" &> /dev/null && libfile="$(find /usr/lib64 -name libcackey.so 2>/dev/null)"
+    if dpkg -i "$DWNLD_DIR/$PKG_FILENAME" &> /dev/null
     then
         echo "Done."
     else
-        echo "error: installation failed. Exitting..."
+        echo -e "${ERR_COLOR}error: installation failed. Exitting..."
         exit "$E_INSTALL"
     fi
 
     # Prevent cackey from upgrading
-    # If cackey upgrades from 7.5 to 7.10, it moves libcackey.so to a different location
+    # If cackey upgrades from 7.5 to 7.10, it moves libcackey.so to a different location,
     # breaking Firefox.
     if apt-mark hold cackey
     then
         echo "Hold placed on cackey package."
     else
-        echo "error: failed to place hold on cackey package."
+        echo -e "${ERR_COLOR}error: failed to place hold on cackey package."
     fi
 
     # Unzip cert bundle
@@ -71,16 +74,22 @@ main ()
         if chrome_cert_DB=$(dirname "$(find "$ORIG_HOME"/.pki/nssdb -name "$NSSDB_FILENAME")")
         then
             # Import DoD certificates
-            echo "Importing DoD certificates for Chrome..."
-            # TODO: add line to append necessary details to pkcs11.txt
+            echo -e "\nImporting DoD certificates for Chrome..."
             for cert in "$DWNLD_DIR/$CERT_FILENAME/"*."$CERT_EXTENSION"
             do
                 echo "Importing $cert"
                 certutil -d sql:"$chrome_cert_DB" -A -t TC -n "$cert" -i "$cert"
             done
+
+            # Point DB security module to libcackey.so with the PKCS file, if it exists.
+            if [ -x "$chrome_cert_DB/$PKCS_FILENAME" ]
+            then
+                echo -e "library=/usr/lib64/libcackey.so\nname=CAC Module" >> "$chrome_cert_DB/$PKCS_FILENAME"
+            fi
+
             echo "Done."
         else
-            echo "error: unable to find Chromes's certificate database"
+            echo -e "${ERR_COLOR}error: unable to find Chromes's certificate database"
         fi
     fi
 
@@ -91,16 +100,22 @@ main ()
         if firefox_cert_DB=$(dirname "$(find "$ORIG_HOME"/.mozilla/firefox -name "$NSSDB_FILENAME")")
         then
             # Import DoD certificates
-            echo "Importing DoD certificates for Firefox..."
-            # TODO: add line to append necessary details to pkcs11.txt
+            echo -e "\nImporting DoD certificates for Firefox..."
             for cert in "$DWNLD_DIR/$CERT_FILENAME/"*."$CERT_EXTENSION"
             do
                 echo "Importing $cert"
                 certutil -d sql:"$firefox_cert_DB" -A -t TC -n "$cert" -i "$cert"
             done
+
+            # Point DB security module to libcackey.so with the PKCS file, if it exists.
+            if [ -x "$chrome_cert_DB/$PKCS_FILENAME" ]
+            then
+                echo -e "library=/usr/lib64/libcackey.so\nname=CAC Module" >> "$chrome_cert_DB/$PKCS_FILENAME"
+            fi
+
             echo "Done."
         else
-            echo "error: unable to find Firefox's certificate database"
+            echo -e "${ERR_COLOR}error: unable to find Firefox's certificate database"
         fi
     fi
 
@@ -109,7 +124,7 @@ main ()
     rm -rf "${DWNLD_DIR:?}"/{"$BUNDLE_FILENAME","$CERT_FILENAME","$PKG_FILENAME"}
     if [ "$?" -ne "$EXIT_SUCCESS" ]
     then
-        echo "error: failed to remove artifacts"
+        echo -e "${ERR_COLOR}error: failed to remove artifacts"
     else
         echo "Done."
     fi
