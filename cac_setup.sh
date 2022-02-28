@@ -12,7 +12,6 @@ main ()
     E_NOTROOT=86       # Non-root exit error
     ROOT_UID=0         # Only users with $UID 0 have root privileges
     DWNLD_DIR="/tmp"   # Reliable location to place artifacts
-
     ORIG_HOME="$(getent passwd "$SUDO_USER" | cut -d: -f6)"
     CERT_EXTENSION="cer"
     NSSDB_FILENAME="cert9.db"
@@ -43,7 +42,7 @@ main ()
 
     # Install libcackey.
     echo "Installing libcackey..."
-    if dpkg -i "$DWNLD_DIR/$PKG_FILENAME" > /dev/null 2>1
+    if dpkg -i "$DWNLD_DIR/$PKG_FILENAME" &> /dev/null && libfile="$(find /usr/lib64 -name libcackey.so 2>/dev/null)"
     then
         echo "Done."
     else
@@ -66,12 +65,13 @@ main ()
     unzip "$DWNLD_DIR/$BUNDLE_FILENAME" -d "$DWNLD_DIR/$CERT_FILENAME"
 
     # Check for Chrome
-    if google-chrome --version
+    if google-chrome --version 2>/dev/null
     then
         # Locate Firefox's database directory in the user's profile
-        if chrome_cert_DB=$(dirname "$(find "$ORIG_HOME"/.pki -name "$NSSDB_FILENAME")")
+        if chrome_cert_DB=$(dirname "$(find "$ORIG_HOME"/.pki/nssdb -name "$NSSDB_FILENAME")")
         then
             # Import DoD certificates
+            modutil -dbdir sql:"$chrome_cert_DB" -add "CAC Module" -libfile "$libfile"
             echo "Importing DoD certificates for Chrome..."
             for cert in "$DWNLD_DIR/$CERT_FILENAME/"*."$CERT_EXTENSION"
             do
@@ -85,13 +85,14 @@ main ()
     fi
 
     # Check for Firefox
-    if firefox --version
+    if firefox --version 2>/dev/null
     then
         # Locate Firefox's database directory in the user's profile
-        if firefox_cert_DB=$(dirname "$(find "$ORIG_HOME"/.mozilla -name "$NSSDB_FILENAME")")
+        if firefox_cert_DB=$(dirname "$(find "$ORIG_HOME"/.mozilla/firefox -name "$NSSDB_FILENAME")")
         then
             # Import DoD certificates
             echo "Importing DoD certificates for Firefox..."
+            modutil -dbdir sql:"$firefox_cert_DB" -add "CAC Module" -libfile "$libfile"
             for cert in "$DWNLD_DIR/$CERT_FILENAME/"*."$CERT_EXTENSION"
             do
                 echo "Importing $cert"
@@ -101,11 +102,6 @@ main ()
         else
             echo "error: unable to find Firefox's certificate database"
         fi
-    fi
-
-    if libfile=$(find /usr/lib64 -name libcackey.so 2>/dev/null)
-    then
-        modutil -dbdir sql:"$firefox_cert_DB" -add "CAC Module" -libfile "$libfile"
     fi
 
     # Remove artifacts
