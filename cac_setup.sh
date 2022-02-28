@@ -69,14 +69,14 @@ main ()
     if google-chrome --version
     then
         # Locate Firefox's database directory in the user's profile
-        if ChromeCertDB=$(dirname "$(find "$ORIG_HOME"/.pki -name "$NSSDB_FILENAME")")
+        if chrome_cert_DB=$(dirname "$(find "$ORIG_HOME"/.pki -name "$NSSDB_FILENAME")")
         then
             # Import DoD certificates
             echo "Importing DoD certificates for Chrome..."
             for cert in "$DWNLD_DIR/$CERT_FILENAME/"*."$CERT_EXTENSION"
             do
                 echo "Importing $cert"
-                certutil -d sql:"$ChromeCertDB" -A -t TC -n "$cert" -i "$cert"
+                certutil -d sql:"$chrome_cert_DB" -A -t TC -n "$cert" -i "$cert"
             done
             echo "Done."
         else
@@ -88,14 +88,14 @@ main ()
     if firefox --version
     then
         # Locate Firefox's database directory in the user's profile
-        if FirefoxCertDB=$(dirname "$(find "$ORIG_HOME"/.mozilla -name "$NSSDB_FILENAME")")
+        if firefox_cert_DB=$(dirname "$(find "$ORIG_HOME"/.mozilla -name "$NSSDB_FILENAME")")
         then
             # Import DoD certificates
             echo "Importing DoD certificates for Firefox..."
             for cert in "$DWNLD_DIR/$CERT_FILENAME/"*."$CERT_EXTENSION"
             do
                 echo "Importing $cert"
-                certutil -d sql:"$FirefoxCertDB" -A -t TC -n "$cert" -i "$cert"
+                certutil -d sql:"$firefox_cert_DB" -A -t TC -n "$cert" -i "$cert"
             done
             echo "Done."
         else
@@ -105,7 +105,7 @@ main ()
 
     if libfile=$(find /usr/lib64 -name libcackey.so 2>/dev/null)
     then
-        modutil -dbdir sql:"$FirefoxCertDB" -add "CAC Module" -libfile "$libfile"
+        modutil -dbdir sql:"$firefox_cert_DB" -add "CAC Module" -libfile "$libfile"
     fi
 
     # Remove artifacts
