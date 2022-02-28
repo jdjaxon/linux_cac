@@ -7,13 +7,15 @@
 
 main ()
 {
-    ERR_COLOR='\033[0;31m'
-    NO_COLOR='\033[0m'
-    EXIT_SUCCESS=0     # Success exit code
-    E_INSTALL=85       # Installation failed
-    E_NOTROOT=86       # Non-root exit error
-    ROOT_UID=0         # Only users with $UID 0 have root privileges
-    DWNLD_DIR="/tmp"   # Reliable location to place artifacts
+    # For colorization
+    ERR_COLOR='\033[0;31m' # Red for error messages
+    NO_COLOR='\033[0m'     # Revert terminal back to no color
+
+    EXIT_SUCCESS=0         # Success exit code
+    E_INSTALL=85           # Installation failed
+    E_NOTROOT=86           # Non-root exit error
+    ROOT_UID=0             # Only users with $UID 0 have root privileges
+    DWNLD_DIR="/tmp"       # Reliable location to place artifacts
 
     ORIG_HOME="$(getent passwd "$SUDO_USER" | cut -d: -f6)"
     CERT_EXTENSION="cer"
