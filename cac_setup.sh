@@ -71,8 +71,8 @@ main ()
         if chrome_cert_DB=$(dirname "$(find "$ORIG_HOME"/.pki/nssdb -name "$NSSDB_FILENAME")")
         then
             # Import DoD certificates
-            modutil -dbdir sql:"$chrome_cert_DB" -add "CAC Module" -libfile "$libfile"
             echo "Importing DoD certificates for Chrome..."
+            # TODO: add line to append necessary details to pkcs11.txt
             for cert in "$DWNLD_DIR/$CERT_FILENAME/"*."$CERT_EXTENSION"
             do
                 echo "Importing $cert"
@@ -92,7 +92,7 @@ main ()
         then
             # Import DoD certificates
             echo "Importing DoD certificates for Firefox..."
-            modutil -dbdir sql:"$firefox_cert_DB" -add "CAC Module" -libfile "$libfile"
+            # TODO: add line to append necessary details to pkcs11.txt
             for cert in "$DWNLD_DIR/$CERT_FILENAME/"*."$CERT_EXTENSION"
             do
                 echo "Importing $cert"
