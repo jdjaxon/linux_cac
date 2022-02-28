@@ -8,6 +8,7 @@
 main ()
 {
     ERR_COLOR='\033[0;31m'
+    NO_COLOR='\033[0m'
     EXIT_SUCCESS=0     # Success exit code
     E_INSTALL=85       # Installation failed
     E_NOTROOT=86       # Non-root exit error
@@ -49,7 +50,7 @@ main ()
     then
         echo "Done."
     else
-        echo -e "${ERR_COLOR}error: installation failed. Exitting..."
+        echo -e "${ERR_COLOR}error:${NO_COLOR} installation failed. Exitting..."
         exit "$E_INSTALL"
     fi
 
@@ -60,7 +61,7 @@ main ()
     then
         echo "Hold placed on cackey package."
     else
-        echo -e "${ERR_COLOR}error: failed to place hold on cackey package."
+        echo -e "${ERR_COLOR}error:${NO_COLOR} failed to place hold on cackey package."
     fi
 
     # Unzip cert bundle
@@ -89,7 +90,7 @@ main ()
 
             echo "Done."
         else
-            echo -e "${ERR_COLOR}error: unable to find Chromes's certificate database"
+            echo -e "${ERR_COLOR}error:${NO_COLOR} unable to find Chromes's certificate database"
         fi
     fi
 
@@ -115,7 +116,7 @@ main ()
 
             echo "Done."
         else
-            echo -e "${ERR_COLOR}error: unable to find Firefox's certificate database"
+            echo -e "${ERR_COLOR}error:${NO_COLOR} unable to find Firefox's certificate database"
         fi
     fi
 
@@ -124,7 +125,7 @@ main ()
     rm -rf "${DWNLD_DIR:?}"/{"$BUNDLE_FILENAME","$CERT_FILENAME","$PKG_FILENAME"}
     if [ "$?" -ne "$EXIT_SUCCESS" ]
     then
-        echo -e "${ERR_COLOR}error: failed to remove artifacts"
+        echo -e "${ERR_COLOR}error:${NO_COLOR} failed to remove artifacts"
     else
         echo "Done."
     fi
