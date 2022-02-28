@@ -13,6 +13,7 @@ main ()
     ROOT_UID=0         # Only users with $UID 0 have root privileges
     DWNLD_DIR="/tmp"   # Reliable location to place artifacts
 
+    ORIG_HOME="$(getent passwd "$SUDO_USER" | cut -d: -f6)"
     CERT_EXTENSION="cer"
     NSSDB_FILENAME="cert9.db"
     CERT_FILENAME="AllCerts"
@@ -68,7 +69,7 @@ main ()
     if google-chrome --version
     then
         # Locate Firefox's database directory in the user's profile
-        if ChromeCertDB=$(dirname "$(find "$HOME"/.pki -name "$NSSDB_FILENAME")")
+        if ChromeCertDB=$(dirname "$(find "$ORIG_HOME"/.pki -name "$NSSDB_FILENAME")")
         then
             # Import DoD certificates
             echo "Importing DoD certificates for Chrome..."
@@ -87,7 +88,7 @@ main ()
     if firefox --version
     then
         # Locate Firefox's database directory in the user's profile
-        if FirefoxCertDB=$(dirname "$(find "$HOME"/.mozilla -name "$NSSDB_FILENAME")")
+        if FirefoxCertDB=$(dirname "$(find "$ORIG_HOME"/.mozilla -name "$NSSDB_FILENAME")")
         then
             # Import DoD certificates
             echo "Importing DoD certificates for Firefox..."
