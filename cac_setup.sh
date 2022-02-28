@@ -52,7 +52,7 @@ main ()
     then
         echo "Done."
     else
-        echo -e "${ERR_COLOR}error:${NO_COLOR} installation failed. Exitting..."
+        echo "${ERR_COLOR}error:${NO_COLOR} installation failed. Exitting..."
         exit "$E_INSTALL"
     fi
 
@@ -63,7 +63,7 @@ main ()
     then
         echo "Hold placed on cackey package."
     else
-        echo -e "${ERR_COLOR}error:${NO_COLOR} failed to place hold on cackey package."
+        echo "${ERR_COLOR}error:${NO_COLOR} failed to place hold on cackey package."
     fi
 
     # Unzip cert bundle
@@ -77,7 +77,7 @@ main ()
         if chrome_cert_DB=$(dirname "$(find "$ORIG_HOME"/.pki/nssdb -name "$NSSDB_FILENAME")")
         then
             # Import DoD certificates
-            echo -e "\nImporting DoD certificates for Chrome..."
+            echo "\nImporting DoD certificates for Chrome..."
             for cert in "$DWNLD_DIR/$CERT_FILENAME/"*."$CERT_EXTENSION"
             do
                 echo "Importing $cert"
@@ -87,12 +87,12 @@ main ()
             # Point DB security module to libcackey.so with the PKCS file, if it exists.
             if [ -f "$chrome_cert_DB/$PKCS_FILENAME" ]
             then
-                echo -e "library=/usr/lib64/libcackey.so\nname=CAC Module" >> "$chrome_cert_DB/$PKCS_FILENAME"
+                echo "library=/usr/lib64/libcackey.so\nname=CAC Module" >> "$chrome_cert_DB/$PKCS_FILENAME"
             fi
 
             echo "Done."
         else
-            echo -e "${ERR_COLOR}error:${NO_COLOR} unable to find Chromes's certificate database"
+            echo "${ERR_COLOR}error:${NO_COLOR} unable to find Chromes's certificate database"
         fi
     fi
 
@@ -103,7 +103,7 @@ main ()
         if firefox_cert_DB=$(dirname "$(find "$ORIG_HOME"/.mozilla/firefox -name "$NSSDB_FILENAME")")
         then
             # Import DoD certificates
-            echo -e "\nImporting DoD certificates for Firefox..."
+            echo "\nImporting DoD certificates for Firefox..."
             for cert in "$DWNLD_DIR/$CERT_FILENAME/"*."$CERT_EXTENSION"
             do
                 echo "Importing $cert"
@@ -113,12 +113,12 @@ main ()
             # Point DB security module to libcackey.so with the PKCS file, if it exists.
             if [ -f "$chrome_cert_DB/$PKCS_FILENAME" ]
             then
-                echo -e "library=/usr/lib64/libcackey.so\nname=CAC Module" >> "$chrome_cert_DB/$PKCS_FILENAME"
+                echo "library=/usr/lib64/libcackey.so\nname=CAC Module" >> "$chrome_cert_DB/$PKCS_FILENAME"
             fi
 
             echo "Done."
         else
-            echo -e "${ERR_COLOR}error:${NO_COLOR} unable to find Firefox's certificate database"
+            echo "${ERR_COLOR}error:${NO_COLOR} unable to find Firefox's certificate database"
         fi
     fi
 
@@ -127,7 +127,7 @@ main ()
     rm -rf "${DWNLD_DIR:?}"/{"$BUNDLE_FILENAME","$CERT_FILENAME","$PKG_FILENAME"}
     if [ "$?" -ne "$EXIT_SUCCESS" ]
     then
-        echo -e "${ERR_COLOR}error:${NO_COLOR} failed to remove artifacts"
+        echo "${ERR_COLOR}error:${NO_COLOR} failed to remove artifacts"
     else
         echo "Done."
     fi
