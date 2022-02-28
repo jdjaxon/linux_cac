@@ -102,10 +102,9 @@ main ()
         fi
     fi
 
-    # TODO: test this
     if libfile=$(find /usr/lib64 -name libcackey.so 2>/dev/null)
     then
-        modutil -add "CAC Module" -libfile "$libfile"
+        modutil -dbdir sql:"$FirefoxCertDB" -add "CAC Module" -libfile "$libfile"
     fi
 
     # Remove artifacts
