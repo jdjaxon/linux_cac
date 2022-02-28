@@ -83,7 +83,7 @@ main ()
             done
 
             # Point DB security module to libcackey.so with the PKCS file, if it exists.
-            if [ -x "$chrome_cert_DB/$PKCS_FILENAME" ]
+            if [ -f "$chrome_cert_DB/$PKCS_FILENAME" ]
             then
                 echo -e "library=/usr/lib64/libcackey.so\nname=CAC Module" >> "$chrome_cert_DB/$PKCS_FILENAME"
             fi
@@ -109,7 +109,7 @@ main ()
             done
 
             # Point DB security module to libcackey.so with the PKCS file, if it exists.
-            if [ -x "$chrome_cert_DB/$PKCS_FILENAME" ]
+            if [ -f "$chrome_cert_DB/$PKCS_FILENAME" ]
             then
                 echo -e "library=/usr/lib64/libcackey.so\nname=CAC Module" >> "$chrome_cert_DB/$PKCS_FILENAME"
             fi
