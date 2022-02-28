@@ -48,7 +48,7 @@ main ()
 
     # Install libcackey.
     echo "Installing libcackey..."
-    if dpkg -i "$DWNLD_DIR/$PKG_FILENAME" &>/dev/null
+    if dpkg -i "$DWNLD_DIR/$PKG_FILENAME"
     then
         echo "Done."
     else
