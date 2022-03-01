@@ -113,7 +113,7 @@ main ()
             # Point DB security module to libcackey.so with the PKCS file, if it exists.
             if [ -f "$firefox_cert_DB/$PKCS_FILENAME" ]
             then
-                echo "library=/usr/lib64/libcackey.so\nname=CAC Module\n" >> "$firefox_cert_DB/$PKCS_FILENAME"
+                printf "library=/usr/lib64/libcackey.so\nname=CAC Module\n" >> "$firefox_cert_DB/$PKCS_FILENAME"
             fi
 
             echo "Done."
