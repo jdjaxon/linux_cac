@@ -24,9 +24,9 @@ https://militarycac.com/linux.htm and trial and error.
 </details>
 
 ## TODOs
-- [ ] Script as much of the setup process as possible
+- [x] Script as much of the setup process as possible
     - [x] Find a way to automate the installation of DOD certificates in Firefox
-- [ ] Fix links in the `Automated Installation` section once script is complete
+- [x] Fix links in the `Automated Installation` section once script is complete
 
 ## Supported Distributions
 Regardless of how similar two distributions may be, I will only list
