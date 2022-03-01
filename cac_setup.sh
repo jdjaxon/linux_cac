@@ -71,7 +71,7 @@ main ()
     unzip "$DWNLD_DIR/$BUNDLE_FILENAME" -d "$DWNLD_DIR/$CERT_FILENAME"
 
     # Check for Chrome
-    if google-chrome --version
+    if sudo -u $SUDO_USER google-chrome --version
     then
         # Locate Firefox's database directory in the user's profile
         if chrome_cert_DB="$(dirname "$(find "$ORIG_HOME/.pki" -name "$NSSDB_FILENAME")")"
@@ -101,7 +101,7 @@ main ()
 
     # Check for Firefox
     echo "-----------------------> firefox time"
-    if firefox --version
+    if sudo -u $SUDO_USER firefox --version
     then
         echo "starting firefox block"
 
