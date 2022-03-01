@@ -76,6 +76,8 @@ main ()
         # Locate Firefox's database directory in the user's profile
         if chrome_cert_DB=$(dirname "$(find "$ORIG_HOME"/.pki/nssdb -name "$NSSDB_FILENAME")")
         then
+            echo "Chrome certificate DB: $chrome_cert_DB"
+
             # Import DoD certificates
             echo "Importing DoD certificates for Chrome..."
             for cert in "$DWNLD_DIR/$CERT_FILENAME/"*."$CERT_EXTENSION"
@@ -87,6 +89,7 @@ main ()
             # Point DB security module to libcackey.so with the PKCS file, if it exists.
             if [ -f "$chrome_cert_DB/$PKCS_FILENAME" ]
             then
+                echo "Writing to chrome file."
                 printf "library=/usr/lib64/libcackey.so\nname=CAC Module\n" >> "$chrome_cert_DB/$PKCS_FILENAME"
             fi
 
@@ -102,6 +105,8 @@ main ()
         # Locate Firefox's database directory in the user's profile
         if firefox_cert_DB=$(dirname "$(find "$ORIG_HOME"/.mozilla/firefox -name "$NSSDB_FILENAME")")
         then
+            echo "Firefox certificate DB: $firefox_cert_DB"
+
             # Import DoD certificates
             echo "Importing DoD certificates for Firefox..."
             for cert in "$DWNLD_DIR/$CERT_FILENAME/"*."$CERT_EXTENSION"
@@ -113,6 +118,7 @@ main ()
             # Point DB security module to libcackey.so with the PKCS file, if it exists.
             if [ -f "$firefox_cert_DB/$PKCS_FILENAME" ]
             then
+                echo "Writing to firefox file."
                 printf "library=/usr/lib64/libcackey.so\nname=CAC Module\n" >> "$firefox_cert_DB/$PKCS_FILENAME"
             fi
 
