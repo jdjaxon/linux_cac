@@ -51,9 +51,11 @@ This script requires root privileges. Feel free to review the script [here](http
 **NOTE:** this script uses the 64-bit version of the cackey package.
 
 To run the setup script, use the following command:
-```
-sudo sh -c "$(wget https://raw.githubusercontent.com/jdjaxon/linux_cac/main/cac_setup.sh)"
-```
+| Method | Command |
+|:-:|:-:|
+| `wget`  | `sudo sh -c "$(wget https://raw.githubusercontent.com/jdjaxon/linux_cac/main/cac_setup.sh -O -)"` |
+| `curl`  | `sudo sh -c "$(curl -fsSL https://raw.githubusercontent.com/jdjaxon/linux_cac/main/cac_setup.sh)"` |
+| `fetch` | `sudo sh -c "$(fetch -o https://raw.githubusercontent.com/jdjaxon/linux_cac/main/cac_setup.sh)"` |
 
 
 ### Manual Installation
