@@ -74,7 +74,7 @@ main ()
     if google-chrome --version 2>/dev/null
     then
         # Locate Firefox's database directory in the user's profile
-        if chrome_cert_DB=$(dirname "$(find "$ORIG_HOME"/.pki/nssdb -name "$NSSDB_FILENAME")")
+        if chrome_cert_DB=$(dirname "$(find "$ORIG_HOME/.pki" -name "$NSSDB_FILENAME")")
         then
             echo "Chrome certificate DB: $chrome_cert_DB"
 
@@ -102,8 +102,10 @@ main ()
     # Check for Firefox
     if firefox --version 2>/dev/null
     then
+        echo "starting firefox block"
+
         # Locate Firefox's database directory in the user's profile
-        if firefox_cert_DB=$(dirname "$(find "$ORIG_HOME"/.mozilla/firefox -name "$NSSDB_FILENAME")")
+        if firefox_cert_DB=$(dirname "$(find "$ORIG_HOME/.mozilla/" -name "$NSSDB_FILENAME")")
         then
             echo "Firefox certificate DB: $firefox_cert_DB"
 
