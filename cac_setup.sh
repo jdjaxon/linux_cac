@@ -76,8 +76,6 @@ main ()
         # Locate Firefox's database directory in the user's profile
         if chrome_cert_DB="$(dirname "$(find "$ORIG_HOME/.pki" -name "$NSSDB_FILENAME")")"
         then
-            echo "Chrome certificate DB: $chrome_cert_DB"
-
             # Import DoD certificates
             echo "Importing DoD certificates for Chrome..."
             for cert in "$DWNLD_DIR/$CERT_FILENAME/"*."$CERT_EXTENSION"
@@ -100,16 +98,11 @@ main ()
     fi
 
     # Check for Firefox
-    echo "-----------------------> firefox time"
     if sudo -u $SUDO_USER firefox --version
     then
-        echo "starting firefox block"
-
         # Locate Firefox's database directory in the user's profile
         if firefox_cert_DB="$(dirname "$(find "$ORIG_HOME/.mozilla/" -name "$NSSDB_FILENAME")")"
         then
-            echo "Firefox certificate DB: $firefox_cert_DB"
-
             # Import DoD certificates
             echo "Importing DoD certificates for Firefox..."
             for cert in "$DWNLD_DIR/$CERT_FILENAME/"*."$CERT_EXTENSION"
@@ -130,7 +123,6 @@ main ()
             echo "${ERR_COLOR}error:${NO_COLOR} unable to find Firefox's certificate database"
         fi
     fi
-    echo "-----------------------> firefox time has ended"
 
     # Remove artifacts
     echo "Removing artifacts..."
