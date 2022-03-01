@@ -71,10 +71,10 @@ main ()
     unzip "$DWNLD_DIR/$BUNDLE_FILENAME" -d "$DWNLD_DIR/$CERT_FILENAME"
 
     # Check for Chrome
-    if google-chrome --version 2>/dev/null
+    if google-chrome --version
     then
         # Locate Firefox's database directory in the user's profile
-        if chrome_cert_DB=$(dirname "$(find "$ORIG_HOME/.pki" -name "$NSSDB_FILENAME")")
+        if chrome_cert_DB="$(dirname "$(find "$ORIG_HOME/.pki" -name "$NSSDB_FILENAME")")"
         then
             echo "Chrome certificate DB: $chrome_cert_DB"
 
@@ -100,12 +100,13 @@ main ()
     fi
 
     # Check for Firefox
-    if firefox --version 2>/dev/null
+    echo "-----------------------> firefox time"
+    if firefox --version
     then
         echo "starting firefox block"
 
         # Locate Firefox's database directory in the user's profile
-        if firefox_cert_DB=$(dirname "$(find "$ORIG_HOME/.mozilla/" -name "$NSSDB_FILENAME")")
+        if firefox_cert_DB="$(dirname "$(find "$ORIG_HOME/.mozilla/" -name "$NSSDB_FILENAME")")"
         then
             echo "Firefox certificate DB: $firefox_cert_DB"
 
@@ -129,6 +130,7 @@ main ()
             echo "${ERR_COLOR}error:${NO_COLOR} unable to find Firefox's certificate database"
         fi
     fi
+    echo "-----------------------> firefox time has ended"
 
     # Remove artifacts
     echo "Removing artifacts..."
