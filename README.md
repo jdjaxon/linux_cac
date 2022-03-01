@@ -18,7 +18,7 @@ https://militarycac.com/linux.htm and trial and error.
         1. [Browser Configuration](#browser-configuration)
             1. [Google Chrome](#google-chrome)
             1. [Firefox](#firefox)
-                1. [Microsoft Teams](#microsoft-teams)
+                1. [Microsoft Teams Troubleshooting](#microsoft-teams-troubleshooting)
 1. [Known Issues](#known-issues)
 1. [Resources](#resources)
 </details>
@@ -44,11 +44,17 @@ distributions and versions here that I know have been tested with this method.
 ## Ubuntu and PopOS
 
 ### Automated Installation
-The automated installation requires `wget` and `unzip` to run and will install both during the setup. If you don't want either tool, remove it after the setup is complete using `sudo apt remove <command>`.
+This installation is a scripted version of the [manual installation](#manual-installation) you will find below.
+This script requires root privileges since it installs the `cackey` package and its dependencies.
+Feel free to review the script [here](https://raw.githubusercontent.com/jdjaxon/linux_cac/main/cac_setup.sh) if this makes you uncomfortable.
+For transparency, the `cackey` package is downloaded from [here](https://cackey.rkeene.org/download/0.7.5/cackey_0.7.5-1_amd64.deb) and the DoD certificates are downloaded from [here](https://militarycac.com/maccerts/AllCerts.zip), both of which are recommended by [militarycac](https://militarycac.com).
 
-This script requires root privileges. Feel free to review the script [here](https://raw.githubusercontent.com/jdjaxon/linux_cac/main/cac_setup.sh) if this makes you uncomfortable.
+**Important Notes:**
+- The automated installation requires `wget` and `unzip` to run and will install both during the setup. If you don't want either tool, remove it after the setup is complete using `sudo apt remove <command>`.
+- The scripted installation has only been tested on Ubuntu 20.04
+- This script uses the 64-bit version of the cackey package.
 
-**NOTE:** this script uses the 64-bit version of the cackey package.
+**WARNING:** Please make sure all browsers are closed before running the script.
 
 To run the setup script, use the following command:
 | Method | Command |
@@ -56,6 +62,8 @@ To run the setup script, use the following command:
 | `wget`  | `sudo sh -c "$(wget https://raw.githubusercontent.com/jdjaxon/linux_cac/main/cac_setup.sh -O -)"` |
 | `curl`  | `sudo sh -c "$(curl -fsSL https://raw.githubusercontent.com/jdjaxon/linux_cac/main/cac_setup.sh)"` |
 | `fetch` | `sudo sh -c "$(fetch -o https://raw.githubusercontent.com/jdjaxon/linux_cac/main/cac_setup.sh)"` |
+
+**NOTE:** If you run into any issues with firefox after running the script, restart firefox. Firefox will start up a bit slower.
 
 
 ### Manual Installation
