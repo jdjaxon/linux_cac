@@ -46,7 +46,7 @@ distributions and versions here that I know have been tested with this method.
 ### Automated Installation
 The automated installation requires `wget` and `unzip` to run and will install both during the setup. If you don't want either tool, remove it after the setup is complete using `sudo apt remove <command>`.
 
-This script requires root privileges. Feel free to review the script [here](https://raw.githubusercontent.com/jdjaxon/linux_cac/scripting-setup-process/cac_setup.sh) if this makes you uncomfortable.
+This script requires root privileges. Feel free to review the script [here](https://raw.githubusercontent.com/jdjaxon/linux_cac/main/cac_setup.sh) if this makes you uncomfortable.
 
 **NOTE:** this script uses the 64-bit version of the cackey package.
 
@@ -60,17 +60,16 @@ To run the setup script, use the following command:
 
 ### Manual Installation
 #### Staging
-1. Download DOD certs from DISA [here](https://militarycac.com/maccerts/AllCerts.zip).
-2. Run the following command to install the CAC middleware:
+1. Run the following command to install the CAC middleware:
 ```
 sudo apt install libpcsclite1 pcscd libccid libpcsc-perl pcsc-tools
 ```
-3. To verify that your CAC is detected, run (stop with ctrl+c):
+2. To verify that your CAC is detected, run (stop with ctrl+c):
 ```
 pcsc_scan
 ```
-4. Download and install cackey from [here](http://cackey.rkeene.org/fossil/wiki?name=Downloads).
-5. Run the following command to verify the location of the cackey module and make note of the location:
+3. Download and install cackey from [here](http://cackey.rkeene.org/fossil/wiki?name=Downloads).
+4. Run the following command to verify the location of the cackey module and make note of the location:
 ```
 find / -name libcackey.so 2>/dev/null
 ```
@@ -80,58 +79,46 @@ find / -name libcackey.so 2>/dev/null
         OR
 /usr/lib64/libcackey.so
 ```
-6. If `apt` updates cackey from 7.5 to 7.10, it will move `libcackey.so` to a different location.
+5. If `apt` updates cackey from 7.5 to 7.10, it will move `libcackey.so` to a different location.
 To prevent cackey from updating, run the following:
 ```
 sudo apt-mark hold cackey
 ```
 - **NOTE**: The cackey package will still show as upgradeable.
 
+6. Download DOD certs from DISA [here](https://militarycac.com/maccerts/AllCerts.zip).
+7. Unzip the `AllCerts.zip` folder using the following command:
+```
+unzip AllCerts.zip -d AllCerts
+```
 
 #### Browser Configuration
 ---
 ##### Google Chrome
-1. Run the following commands to configure the database:
+1. `cd` into the newly created `AllCerts` directory
+2. Run the following command:
 ```
-modutil -dbdir sql:$HOME/.pki/nssdb/ -add "CAC Module" -libfile <libcackey.so's location>
-modutil -dbdir sql:$HOME/.pki/nssdb/ -list
+for cert in *.cer; do certutil -d sql:"$HOME/.pki/nssdb" -A -t TC -n "$cert" -i "$cert"; done
 ```
-- **NOTE**: You should see output that resembles the following:
-```
-    1. NSS Internal PKCS #11 Module
-         slots: 2 slots attached
-         status:loaded
-
-         slot: NSS Internal Cryptographic Services
-         token: NSS Generic Crypto Services
-
-         slot: NSS User Private Key and Certificate Services
-         token: NSS Certificate DB
-
-    2. CAC Module
-         library name: /usr/lib/libcackey.so
-         slots: 1 slot attached
-         status: loaded
-
-         slot: CACKey Slot
-         token: LASTNAME.FIRSTNAME.NMN.123456789
-```
-2. `cd` inside the DISA `AllCerts` folder
 3. Run the following command:
 ```
-for cert in *.cer; do certutil -d sql:$HOME/.pki/nssdb -A -t TC -n $cert -i $cert; done
+printf "library=/usr/lib64/libcackey.so\nname=CAC Module" >> $HOME/.pki/nssdb/pkcs11.txt
 ```
 
 ##### Firefox
-1. Open the Firefox browser.
-2. Go to `Settings` -> `Privacy and Security`
-3. Near the bottom, click `Security Devices...`, then select `Load`
-4. Make the `Module Name` CAC Module and then browse to the location of the `libcackey.so` module. Click `OK` when done.
-3. Next, click `View Certificates...`
-4. Select the `Authorities` tab.
-5. Individually `Import` all the certs inside the DISA `AllCerts` folder (there are quite a few).
+1. `cd` into the `AllCerts` directory
+2. Run the following command:
+```
+for cert in *.cer; do certutil -d sql:"$(dirname "$(find "$HOME/.mozilla" -name "cert9.db")")" -A -t TC -n "$cert" -i "$cert"; done
+```
+3. Run the following command:
+```
+printf "library=/usr/lib64/libcackey.so\nname=CAC Module" >> "$(dirname "$(find "$HOME/.mozilla" -name "cert9.db")")/pkcs11.txt"
+```
+- **NOTE**: Since the firefox database directory starts with a random string of characters, it needs to be found dynamically. Its naming and location follows this convention: `$HOME/.mozilla/firefox/<alpahnumeric string>.default-release`.
 
-###### Microsoft Teams
+###### Microsoft Teams Troubleshooting
+If you run into issues with MS Teams, try the following steps:
 1. In the Firefox Settings window, select the `Privacy & Security` tab.
 2. Under `Cookies and Site Data`, select `Manage Exceptions`.
 3. In the `Address of website` text box, enter the following URLs, and then select `Allow`.
