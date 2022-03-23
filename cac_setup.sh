@@ -87,13 +87,19 @@ main ()
             # Point DB security module to libcackey.so with the PKCS file, if it exists.
             if [ -f "$chrome_cert_DB/$PKCS_FILENAME" ]
             then
-                printf "library=/usr/lib64/libcackey.so\nname=CAC Module\n" >> "$chrome_cert_DB/$PKCS_FILENAME"
+                # TODO: add check to see if line already exists.
+                if ! grep -Pzo 'library=/usr/lib64/libcackey.so\nname=CAC Module' "$chrome_cert_DB/$PKCS_FILENAME"
+                then
+                    printf "library=/usr/lib64/libcackey.so\nname=CAC Module\n" >> "$chrome_cert_DB/$PKCS_FILENAME"
+                fi
             fi
 
             echo "Done."
         else
-            echo "${ERR_COLOR}error:${NO_COLOR} unable to find Chromes's certificate database"
+            echo -e "${ERR_COLOR}error:${NO_COLOR} unable to find Chromes's certificate database"
         fi
+    else
+        echo -e "${ERR_COLOR}error:${NO_COLOR} unable to find Chromes's certificate database"
     fi
 
     # Check for Firefox
@@ -113,13 +119,19 @@ main ()
             # Point DB security module to libcackey.so with the PKCS file, if it exists.
             if [ -f "$firefox_cert_DB/$PKCS_FILENAME" ]
             then
-                printf "library=/usr/lib64/libcackey.so\nname=CAC Module\n" >> "$firefox_cert_DB/$PKCS_FILENAME"
+                # TODO: add check to see if line already exists.
+                if ! grep -Pzo 'library=/usr/lib64/libcackey.so\nname=CAC Module' "$firefox_cert_DB/$PKCS_FILENAME"
+                then
+                    printf "library=/usr/lib64/libcackey.so\nname=CAC Module\n" >> "$firefox_cert_DB/$PKCS_FILENAME"
+                fi
             fi
 
             echo "Done."
         else
-            echo "${ERR_COLOR}error:${NO_COLOR} unable to find Firefox's certificate database"
+            echo -e "${ERR_COLOR}error:${NO_COLOR} unable to find Firefox's certificate database"
         fi
+    else
+        echo -e "${ERR_COLOR}error:${NO_COLOR} unable to find Chromes's certificate database"
     fi
 
     # Remove artifacts
