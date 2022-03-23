@@ -147,6 +147,7 @@ See the official documentation for this issue
 
 
 ## Known Issues
+- Firefox needs to be started at least once to build the user's default mozilla directory.
 - CAC needs to be inserted before starting Firefox
 
 ## Resources
