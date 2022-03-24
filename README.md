@@ -42,6 +42,7 @@ distributions and versions here that I know have been tested with this method.
 - Firefox
 
 ## Ubuntu and PopOS
+Please run either the [Automated Installation](#automated-installation) or the [Manual Installation](#manual-installation), but not both.
 
 ### Automated Installation
 This installation is a scripted version of the [manual installation](#manual-installation) you will find below.
