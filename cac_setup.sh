@@ -73,7 +73,7 @@ main ()
 
 
     # Check for Chrome
-    if sudo -u $SUDO_USER google-chrome --version
+    if sudo -u $SUDO_USER google-chrome --version 2>/dev/null
     then
         # Placing here to maintain scope
         chrome_cert_DB=""
@@ -113,7 +113,7 @@ main ()
 
 
     # Check for Firefox
-    if sudo -u $SUDO_USER firefox --version
+    if sudo -u $SUDO_USER firefox --version 2>/dev/null
     then
         # Placing here to maintain scope
         firefox_cert_DB=""
