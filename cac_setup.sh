@@ -71,15 +71,11 @@ main ()
     mkdir -p "$DWNLD_DIR/$CERT_FILENAME"
     unzip "$DWNLD_DIR/$BUNDLE_FILENAME" -d "$DWNLD_DIR/$CERT_FILENAME"
 
-
     # Check for Chrome
     if sudo -u $SUDO_USER google-chrome --version 2>/dev/null
     then
-        # Placing here to maintain scope
-        chrome_cert_DB=""
-
         # Locate Firefox's database directory in the user's profile
-        chrome_dir="$(find / -name ".pki" 2>/dev/null)"
+        chrome_dir="$(find / -name "$ORIG_HOME/.pki" 2>/dev/null | grep "$SUDO_USER" | head -n1)"
         if [ "$chrome_dir" ]
         then
             if cert_file="$(find "$chrome_dir" -name "$NSSDB_FILENAME" 2>/dev/null)"
@@ -117,11 +113,8 @@ main ()
     # Check for Firefox
     if sudo -u $SUDO_USER firefox --version 2>/dev/null
     then
-        # Placing here to maintain scope
-        firefox_cert_DB=""
-
         # Locate Firefox's database directory in the user's profile
-        mozilla_dir="$(find / -name ".mozilla" 2>/dev/null | head -n1)"
+        mozilla_dir="$(find / -name ".mozilla" 2>/dev/null | grep "$SUDO_USER" | head -n1)"
         if [ "$mozilla_dir" ]
         then
             echo "Searching for cert for Firefox..."
