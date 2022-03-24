@@ -9,7 +9,7 @@ main ()
 {
     # For colorization
     ERR_COLOR='\033[0;31m'  # Red for error messages
-    NOTE_COLOR='\033[0;33m' # Yellow for notes
+    INFO_COLOR='\033[0;33m' # Yellow for notes
     NO_COLOR='\033[0m'      # Revert terminal back to no color
 
     EXIT_SUCCESS=0          # Success exit code
@@ -36,19 +36,19 @@ main ()
     fi
 
     # Install middleware and necessary utilities
-    echo -e "${NOTE_COLOR}[INFO] Installing middleware...${NO_COLOR}"
+    echo -e "${INFO_COLOR}[INFO] Installing middleware...${NO_COLOR}"
     apt update
     DEBIAN_FRONTEND=noninteractive apt install -y libpcsclite1 pcscd libccid libpcsc-perl pcsc-tools libnss3-tools unzip wget
     echo "Done"
 
     # Pull all necessary files
-    echo -e "${NOTE_COLOR}[INFO] Downloading DoD certificates and Cackey package...${NO_COLOR}"
+    echo -e "${INFO_COLOR}[INFO] Downloading DoD certificates and Cackey package...${NO_COLOR}"
     wget -qP "$DWNLD_DIR" "$CERT_URL"
     wget -qP "$DWNLD_DIR" "$CACKEY_URL"
     echo "Done."
 
     # Install libcackey.
-    echo -e "${NOTE_COLOR}[INFO] Installing libcackey...${NO_COLOR}"
+    echo -e "${INFO_COLOR}[INFO] Installing libcackey...${NO_COLOR}"
     if dpkg -i "$DWNLD_DIR/$PKG_FILENAME"
     then
         echo "Done."
@@ -62,7 +62,7 @@ main ()
     # breaking Firefox.
     if apt-mark hold cackey
     then
-        echo -e "${NOTE_COLOR}[INFO] Hold placed on cackey package${NO_COLOR}"
+        echo -e "${INFO_COLOR}[INFO] Hold placed on cackey package${NO_COLOR}"
     else
         echo -e "${ERR_COLOR}[ERROR] Failed to place hold on cackey package${NO_COLOR}"
     fi
@@ -85,10 +85,10 @@ main ()
             if cert_file="$(find "$chrome_dir" -name "$NSSDB_FILENAME" 2>/dev/null)"
             then
                 chrome_cert_DB="$(dirname "$cert_file")"
-                echo -e "${NOTE_COLOR}[INFO] Chrome's cert database location: $chrome_cert_DB${NO_COLOR}"
+                echo -e "${INFO_COLOR}[INFO] Chrome's cert database location: $chrome_cert_DB${NO_COLOR}"
 
                 # Import DoD certificates
-                echo -e "${NOTE_COLOR}[INFO] Importing DoD certificates for Chrome...${NO_COLOR}"
+                echo -e "${INFO_COLOR}[INFO] Importing DoD certificates for Chrome...${NO_COLOR}"
                 for cert in "$DWNLD_DIR/$CERT_FILENAME/"*."$CERT_EXTENSION"
                 do
                     echo "Importing $cert"
@@ -110,7 +110,7 @@ main ()
             echo -e "${ERR_COLOR}[ERROR] Unable to find Chromes's certificate database${NO_COLOR}"
         fi
     else
-        echo -e "${NOTE_COLOR}[INFO] Chrome is not installed. Proceeding to firefox cert installation...${NO_COLOR} "
+        echo -e "${INFO_COLOR}[INFO] Chrome is not installed. Proceeding to firefox cert installation...${NO_COLOR} "
     fi
 
 
@@ -131,10 +131,10 @@ main ()
             if [ $cert_file ]
             then
                 firefox_cert_DB="$(dirname "$cert_file")"
-                echo -e "${NOTE_COLOR}[INFO] Firefox's cert database location: $firefox_cert_DB ${NO_COLOR}"
+                echo -e "${INFO_COLOR}[INFO] Firefox's cert database location: $firefox_cert_DB ${NO_COLOR}"
 
                 # Import DoD certificates
-                echo -e "${NOTE_COLOR}[INFO] Importing DoD certificates for Firefox...${NO_COLOR}"
+                echo -e "${INFO_COLOR}[INFO] Importing DoD certificates for Firefox...${NO_COLOR}"
                 for cert in "$DWNLD_DIR/$CERT_FILENAME/"*."$CERT_EXTENSION"
                 do
                     echo "Importing $cert"
@@ -152,17 +152,17 @@ main ()
 
                 echo "Done."
             else
-                echo -e "${NOTE_COLOR}[INFO] Could not locate Firefox's cert database${NO_COLOR}"
+                echo -e "${INFO_COLOR}[INFO] Could not locate Firefox's cert database${NO_COLOR}"
             fi
         else
             echo -e "${ERR_COLOR}[ERROR] Unable to find Firefox's install directory. Firefox must run at least once.${NO_COLOR}"
         fi
     else
-        echo -e "${NOTE_COLOR}[INFO] Firefox not installed${NO_COLOR}"
+        echo -e "${INFO_COLOR}[INFO] Firefox not installed${NO_COLOR}"
     fi
 
     # Remove artifacts
-    echo -e "${NOTE_COLOR}[INFO] Removing artifacts...${NO_COLOR}"
+    echo -e "${INFO_COLOR}[INFO] Removing artifacts...${NO_COLOR}"
     rm -rf "${DWNLD_DIR:?}"/{"$BUNDLE_FILENAME","$CERT_FILENAME","$PKG_FILENAME"}
     if [ "$?" -ne "$EXIT_SUCCESS" ]
     then
