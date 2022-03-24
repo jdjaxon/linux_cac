@@ -79,11 +79,13 @@ main ()
         chrome_cert_DB=""
 
         # Locate Firefox's database directory in the user's profile
-        if chrome_dir="$(find / -name ".pki/nssdb")"
+        chrome_dir="$(find / -name ".pki" 2>/dev/null)"
+        if [ "$chrome_dir" ]
         then
-            if cert_file="$(find "$chrome_dir" -name "$NSSDB_FILENAME")"
+            if cert_file="$(find "$chrome_dir" -name "$NSSDB_FILENAME"  2>/dev/null)"
             then
                 chrome_cert_DB="$(dirname "$cert_file")"
+                echo -e "${NOTE_COLOR}[INFO] Chrome's cert database location: $chrome_cert_DB ${NO_COLOR}" 
 
                 # Import DoD certificates
                 echo -e "${NOTE_COLOR}Importing DoD certificates for Chrome...${NO_COLOR}"
@@ -108,7 +110,7 @@ main ()
             echo -e "${ERR_COLOR}[ERROR]${NO_COLOR} unable to find Chromes's certificate database"
         fi
     else
-        echo -e "${ERR_COLOR}[INFO]${NO_COLOR} Chrome is not installed. Proceeding to firefox cert installation..."
+        echo -e "${NOTE_COLOR}[INFO] Chrome is not installed. Proceeding to firefox cert installation...${NO_COLOR} "
     fi
 
 
@@ -119,11 +121,17 @@ main ()
         firefox_cert_DB=""
 
         # Locate Firefox's database directory in the user's profile
-        if mozilla_dir="$(find / -name ".mozilla")"
+        mozilla_dir="$(find / -name ".mozilla" 2>/dev/null | head -n1)"
+        if [ "$mozilla_dir" ]
         then
-            if cert_file="$(find "$mozilla_dir" -name "$NSSDB_FILENAME")"
+            echo "Searching for cert for Firefox..."
+            echo "DEBUG: mozilla_dir = $mozilla_dir"
+            cert_file="$(find "$mozilla_dir" -name "$NSSDB_FILENAME" 2>/dev/null)"
+            echo "$cert_file"
+            if [ $cert_file ]
             then
                 firefox_cert_DB="$(dirname "$cert_file")"
+                echo -e "${NOTE_COLOR}[INFO] Firefox's cert database location: $firefox_cert_DB ${NO_COLOR}" 
 
                 # Import DoD certificates
                 echo -e "${NOTE_COLOR}Importing DoD certificates for Firefox...${NO_COLOR}"
@@ -143,6 +151,8 @@ main ()
                 fi
 
                 echo "Done."
+            else
+                echo -e "${NOTE_COLOR}[INFO] Could not locate Firefox's cert database${NO_COLOR}"
             fi
         else
             echo -e "${ERR_COLOR}[ERROR]${NOTE_COLOR} unable to find Firefox's install directory. Firefox must run at least once.${NO_COLOR}"
