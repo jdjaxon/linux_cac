@@ -71,68 +71,84 @@ main ()
     mkdir -p "$DWNLD_DIR/$CERT_FILENAME"
     unzip "$DWNLD_DIR/$BUNDLE_FILENAME" -d "$DWNLD_DIR/$CERT_FILENAME"
 
+
     # Check for Chrome
     if sudo -u $SUDO_USER google-chrome --version
     then
-        # Locate Chrome's database directory in the user's profile
-        if chrome_cert_DB="$(dirname "$(find "$ORIG_HOME/.pki" -name "$NSSDB_FILENAME")")"
+        # Placing here to maintain scope
+        chrome_cert_DB=""
+
+        # Locate Firefox's database directory in the user's profile
+        if chrome_dir="$(find / -name ".pki/nssdb")"
         then
-            # Import DoD certificates
-            echo -e "${NOTE_COLOR}Importing DoD certificates for Chrome...${NO_COLOR}"
-            for cert in "$DWNLD_DIR/$CERT_FILENAME/"*."$CERT_EXTENSION"
-            do
-                echo "Importing $cert"
-                certutil -d sql:"$chrome_cert_DB" -A -t TC -n "$cert" -i "$cert"
-            done
-
-            # Point DB security module to libcackey.so with the PKCS file, if it exists.
-            if [ -f "$chrome_cert_DB/$PKCS_FILENAME" ]
+            if cert_file="$(find "$chrome_dir" -name "$NSSDB_FILENAME")"
             then
-                # TODO: add check to see if line already exists.
-                if ! grep -Pzo 'library=/usr/lib64/libcackey.so\nname=CAC Module' "$chrome_cert_DB/$PKCS_FILENAME" >/dev/null
-                then
-                    printf "library=/usr/lib64/libcackey.so\nname=CAC Module\n" >> "$chrome_cert_DB/$PKCS_FILENAME"
-                fi
-            fi
+                chrome_cert_DB="$(dirname "$cert_file")"
 
-            echo "Done."
+                # Import DoD certificates
+                echo -e "${NOTE_COLOR}Importing DoD certificates for Chrome...${NO_COLOR}"
+                for cert in "$DWNLD_DIR/$CERT_FILENAME/"*."$CERT_EXTENSION"
+                do
+                    echo "Importing $cert"
+                    certutil -d sql:"$chrome_cert_DB" -A -t TC -n "$cert" -i "$cert"
+                done
+
+                # Point DB security module to libcackey.so with the PKCS file, if it exists.
+                if [ -f "$chrome_cert_DB/$PKCS_FILENAME" ]
+                then
+                    if ! grep -Pzo 'library=/usr/lib64/libcackey.so\nname=CAC Module' "$chrome_cert_DB/$PKCS_FILENAME" >/dev/null
+                    then
+                        printf "library=/usr/lib64/libcackey.so\nname=CAC Module\n" >> "$chrome_cert_DB/$PKCS_FILENAME"
+                    fi
+                fi
+
+                echo "Done."
+            fi
         else
-            echo -e "${ERR_COLOR}error:${NO_COLOR} unable to find Chromes's certificate database"
+            echo -e "${ERR_COLOR}[ERROR]${NO_COLOR} unable to find Chromes's certificate database"
         fi
     else
-        echo -e "${ERR_COLOR}error:${NO_COLOR} Chrome is not installed. Proceeding to firefox cert installation..."
+        echo -e "${ERR_COLOR}[INFO]${NO_COLOR} Chrome is not installed. Proceeding to firefox cert installation..."
     fi
+
 
     # Check for Firefox
     if sudo -u $SUDO_USER firefox --version
     then
+        # Placing here to maintain scope
+        firefox_cert_DB=""
+
         # Locate Firefox's database directory in the user's profile
-        if firefox_cert_DB="$(dirname "$(find "$ORIG_HOME/.mozilla/" -name "$NSSDB_FILENAME")")"
+        if mozilla_dir="$(find / -name ".mozilla")"
         then
-            # Import DoD certificates
-            echo -e "${NOTE_COLOR}Importing DoD certificates for Firefox...${NO_COLOR}"
-            for cert in "$DWNLD_DIR/$CERT_FILENAME/"*."$CERT_EXTENSION"
-            do
-                echo "Importing $cert"
-                certutil -d sql:"$firefox_cert_DB" -A -t TC -n "$cert" -i "$cert"
-            done
-
-            # Point DB security module to libcackey.so with the PKCS file, if it exists.
-            if [ -f "$firefox_cert_DB/$PKCS_FILENAME" ]
+            if cert_file="$(find "$mozilla_dir" -name "$NSSDB_FILENAME")"
             then
-                # TODO: add check to see if line already exists.
-                if ! grep -Pzo 'library=/usr/lib64/libcackey.so\nname=CAC Module' "$firefox_cert_DB/$PKCS_FILENAME" >/dev/null
-                then
-                    printf "library=/usr/lib64/libcackey.so\nname=CAC Module\n" >> "$firefox_cert_DB/$PKCS_FILENAME"
-                fi
-            fi
+                firefox_cert_DB="$(dirname "$cert_file")"
 
-            echo "Done."
+                # Import DoD certificates
+                echo -e "${NOTE_COLOR}Importing DoD certificates for Firefox...${NO_COLOR}"
+                for cert in "$DWNLD_DIR/$CERT_FILENAME/"*."$CERT_EXTENSION"
+                do
+                    echo "Importing $cert"
+                    certutil -d sql:"$firefox_cert_DB" -A -t TC -n "$cert" -i "$cert"
+                done
+
+                # Point DB security module to libcackey.so with the PKCS file, if it exists.
+                if [ -f "$firefox_cert_DB/$PKCS_FILENAME" ]
+                then
+                    if ! grep -Pzo 'library=/usr/lib64/libcackey.so\nname=CAC Module' "$firefox_cert_DB/$PKCS_FILENAME" >/dev/null
+                    then
+                        printf "library=/usr/lib64/libcackey.so\nname=CAC Module\n" >> "$firefox_cert_DB/$PKCS_FILENAME"
+                    fi
+                fi
+
+                echo "Done."
+            fi
         else
-            echo -e "${ERR_COLOR}error:${NOTE_COLOR} unable to find Firefox's certificate database${NO_COLOR}"
+            echo -e "${ERR_COLOR}[ERROR]${NOTE_COLOR} unable to find Firefox's install directory. Firefox must run at least once.${NO_COLOR}"
         fi
     else
-        echo -e "${ERR_COLOR}error:${NOTE_COLOR} unable to find Chromes's certificate database${NO_COLOR}"
+        echo -e "${ERR_COLOR}[INFO]${NOTE_COLOR} Firefox not installed${NO_COLOR}"
     fi
 
     # Remove artifacts
@@ -140,7 +156,7 @@ main ()
     rm -rf "${DWNLD_DIR:?}"/{"$BUNDLE_FILENAME","$CERT_FILENAME","$PKG_FILENAME"}
     if [ "$?" -ne "$EXIT_SUCCESS" ]
     then
-        echo -e "${ERR_COLOR}error:${NOTE_COLOR} failed to remove artifacts${NO_COLOR}"
+        echo -e "${ERR_COLOR}[ERROR]${NOTE_COLOR} failed to remove artifacts${NO_COLOR}"
     else
         echo "Done."
     fi
