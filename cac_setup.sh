@@ -109,7 +109,6 @@ main ()
         echo -e "${INFO_COLOR}[INFO] Chrome is not installed. Proceeding to firefox cert installation...${NO_COLOR} "
     fi
 
-
     # Check for Firefox
     if sudo -u $SUDO_USER firefox --version 2>/dev/null
     then
