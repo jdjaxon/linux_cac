@@ -23,19 +23,14 @@ https://militarycac.com/linux.htm and trial and error.
 1. [Resources](#resources)
 </details>
 
-## TODOs
-- [x] Script as much of the setup process as possible
-    - [x] Find a way to automate the installation of DOD certificates in Firefox
-- [x] Fix links in the `Automated Installation` section once script is complete
-
 ## Supported Distributions
 Regardless of how similar two distributions may be, I will only list
 distributions and versions here that I know have been tested with this method.
 
 | Distribution | Versions |
 |:-:|:-:|
-| Ubuntu | 20.04 |
-| PopOS! | 21.04 |
+| Ubuntu | 20.04 LTS |
+| PopOS! | 20.04 LTS |
 
 ## Supported Browsers
 - Chrome
@@ -148,7 +143,7 @@ See the official documentation for this issue
 
 
 ## Known Issues
-- Firefox needs to be started at least once to build the user's default mozilla directory.
+- Firefox and Chrome both need to be started at least once to initialize their respective certificate databases.
 - CAC needs to be inserted before starting Firefox
 
 ## Resources
