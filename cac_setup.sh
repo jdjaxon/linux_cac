@@ -2,7 +2,6 @@
 
 # cac_setup.sh
 # Author: Jeremy Jackson
-# Date: 24 Feb 2022
 # Description: Setup a Linux environment for Common Access Card use.
 
 main ()
@@ -21,7 +20,7 @@ main ()
     ORIG_HOME="$(getent passwd "$SUDO_USER" | cut -d: -f6)"
     CERT_EXTENSION="cer"
     PKCS_FILENAME="pkcs11.txt"
-    NSSDB_FILENAME="cert9.db"
+    DB_FILENAME="cert9.db"
     CERT_FILENAME="AllCerts"
     BUNDLE_FILENAME="AllCerts.zip"
     CERT_URL="http://militarycac.com/maccerts/$BUNDLE_FILENAME"
@@ -71,87 +70,103 @@ main ()
     mkdir -p "$DWNLD_DIR/$CERT_FILENAME"
     unzip "$DWNLD_DIR/$BUNDLE_FILENAME" -d "$DWNLD_DIR/$CERT_FILENAME"
 
+    # From testing on Ubuntu 22.04, this process doesn't seem to work well with snap,
+    # so the script will ignore databases within snap.
+    databases=($(find / -name "$DB_FILENAME" 2>/dev/null | grep "firefox\|pki" | grep -v "snap"))
+    for db in $databases
+    do
+        echo "Importing certificates into $db..."
+        echo
+        for cert in "$DWNLD_DIR/$CERT_FILENAME/"*."$CERT_EXTENSION"
+        do
+            echo "Importing $cert"
+            certutil -d sql:"$chrome_cert_DB" -A -t TC -n "$cert" -i "$cert"
+        done
+        echo "Done loading certificates into $db"
+        echo
+    done
+
     # Check for Chrome
-    if sudo -u $SUDO_USER google-chrome --version 2>/dev/null
-    then
-        # Locate Firefox's database directory in the user's profile
-        chrome_dir="$(find / -name "$ORIG_HOME/.pki" 2>/dev/null | grep "$SUDO_USER" | head -n1)"
-        if [ "$chrome_dir" ]
-        then
-            if cert_file="$(find "$chrome_dir" -name "$NSSDB_FILENAME" 2>/dev/null)"
-            then
-                chrome_cert_DB="$(dirname "$cert_file")"
-                echo -e "${INFO_COLOR}[INFO] Chrome's cert database location: $chrome_cert_DB${NO_COLOR}"
+    #if sudo -u $SUDO_USER google-chrome --version 2>/dev/null
+    #then
+    #    # Locate Firefox's database directory in the user's profile
+    #    chrome_dir="$(find / -name "$ORIG_HOME/.pki" 2>/dev/null | grep "$SUDO_USER" | head -n1)"
+    #    if [ "$chrome_dir" ]
+    #    then
+    #        if cert_file="$(find "$chrome_dir" -name "$DB_FILENAME" 2>/dev/null)"
+    #        then
+    #            chrome_cert_DB="$(dirname "$cert_file")"
+    #            echo -e "${INFO_COLOR}[INFO] Chrome's cert database location: $chrome_cert_DB${NO_COLOR}"
 
-                # Import DoD certificates
-                echo -e "${INFO_COLOR}[INFO] Importing DoD certificates for Chrome...${NO_COLOR}"
-                for cert in "$DWNLD_DIR/$CERT_FILENAME/"*."$CERT_EXTENSION"
-                do
-                    echo "Importing $cert"
-                    certutil -d sql:"$chrome_cert_DB" -A -t TC -n "$cert" -i "$cert"
-                done
+    #            # Import DoD certificates
+    #            echo -e "${INFO_COLOR}[INFO] Importing DoD certificates for Chrome...${NO_COLOR}"
+    #            for cert in "$DWNLD_DIR/$CERT_FILENAME/"*."$CERT_EXTENSION"
+    #            do
+    #                echo "Importing $cert"
+    #                certutil -d sql:"$chrome_cert_DB" -A -t TC -n "$cert" -i "$cert"
+    #            done
 
-                # Point DB security module to libcackey.so with the PKCS file, if it exists.
-                if [ -f "$chrome_cert_DB/$PKCS_FILENAME" ]
-                then
-                    if ! grep -Pzo 'library=/usr/lib64/libcackey.so\nname=CAC Module' "$chrome_cert_DB/$PKCS_FILENAME" >/dev/null
-                    then
-                        printf "library=/usr/lib64/libcackey.so\nname=CAC Module\n" >> "$chrome_cert_DB/$PKCS_FILENAME"
-                    fi
-                fi
+    #            # Point DB security module to libcackey.so with the PKCS file, if it exists.
+    #            if [ -f "$chrome_cert_DB/$PKCS_FILENAME" ]
+    #            then
+    #                if ! grep -Pzo 'library=/usr/lib64/libcackey.so\nname=CAC Module' "$chrome_cert_DB/$PKCS_FILENAME" >/dev/null
+    #                then
+    #                    printf "library=/usr/lib64/libcackey.so\nname=CAC Module\n" >> "$chrome_cert_DB/$PKCS_FILENAME"
+    #                fi
+    #            fi
 
-                echo "Done."
-            fi
-        else
-            echo -e "${ERR_COLOR}[ERROR] Unable to find Chromes's certificate database${NO_COLOR}"
-        fi
-    else
-        echo -e "${INFO_COLOR}[INFO] Chrome is not installed. Proceeding to firefox cert installation...${NO_COLOR} "
-    fi
+    #            echo "Done."
+    #        fi
+    #    else
+    #        echo -e "${ERR_COLOR}[ERROR] Unable to find Chromes's certificate database${NO_COLOR}"
+    #    fi
+    #else
+    #    echo -e "${INFO_COLOR}[INFO] Chrome is not installed. Proceeding to firefox cert installation...${NO_COLOR} "
+    #fi
 
-    # Check for Firefox
-    if sudo -u $SUDO_USER firefox --version 2>/dev/null
-    then
-        # Locate Firefox's database directory in the user's profile
-        mozilla_dir="$(find / -name ".mozilla" 2>/dev/null | grep "$SUDO_USER" | head -n1)"
-        if [ "$mozilla_dir" ]
-        then
-            echo "Searching for cert for Firefox..."
-            echo "DEBUG: mozilla_dir = $mozilla_dir"
-            cert_file="$(find "$mozilla_dir" -name "$NSSDB_FILENAME" 2>/dev/null)"
-            echo "$cert_file"
-            if [ $cert_file ]
-            then
-                firefox_cert_DB="$(dirname "$cert_file")"
-                echo -e "${INFO_COLOR}[INFO] Firefox's cert database location: $firefox_cert_DB ${NO_COLOR}"
+    ## Check for Firefox
+    #if sudo -u $SUDO_USER firefox --version 2>/dev/null
+    #then
+    #    # Locate Firefox's database directory in the user's profile
+    #    mozilla_dir="$(find / -name ".mozilla" 2>/dev/null | grep "$SUDO_USER" | head -n1)"
+    #    if [ "$mozilla_dir" ]
+    #    then
+    #        echo "Searching for cert for Firefox..."
+    #        echo "DEBUG: mozilla_dir = $mozilla_dir"
+    #        cert_file="$(find "$mozilla_dir" -name "$DB_FILENAME" 2>/dev/null)"
+    #        echo "$cert_file"
+    #        if [ $cert_file ]
+    #        then
+    #            firefox_cert_DB="$(dirname "$cert_file")"
+    #            echo -e "${INFO_COLOR}[INFO] Firefox's cert database location: $firefox_cert_DB ${NO_COLOR}"
 
-                # Import DoD certificates
-                echo -e "${INFO_COLOR}[INFO] Importing DoD certificates for Firefox...${NO_COLOR}"
-                for cert in "$DWNLD_DIR/$CERT_FILENAME/"*."$CERT_EXTENSION"
-                do
-                    echo "Importing $cert"
-                    certutil -d sql:"$firefox_cert_DB" -A -t TC -n "$cert" -i "$cert"
-                done
+    #            # Import DoD certificates
+    #            echo -e "${INFO_COLOR}[INFO] Importing DoD certificates for Firefox...${NO_COLOR}"
+    #            for cert in "$DWNLD_DIR/$CERT_FILENAME/"*."$CERT_EXTENSION"
+    #            do
+    #                echo "Importing $cert"
+    #                certutil -d sql:"$firefox_cert_DB" -A -t TC -n "$cert" -i "$cert"
+    #            done
 
-                # Point DB security module to libcackey.so with the PKCS file, if it exists.
-                if [ -f "$firefox_cert_DB/$PKCS_FILENAME" ]
-                then
-                    if ! grep -Pzo 'library=/usr/lib64/libcackey.so\nname=CAC Module' "$firefox_cert_DB/$PKCS_FILENAME" >/dev/null
-                    then
-                        printf "library=/usr/lib64/libcackey.so\nname=CAC Module\n" >> "$firefox_cert_DB/$PKCS_FILENAME"
-                    fi
-                fi
+    #            # Point DB security module to libcackey.so with the PKCS file, if it exists.
+    #            if [ -f "$firefox_cert_DB/$PKCS_FILENAME" ]
+    #            then
+    #                if ! grep -Pzo 'library=/usr/lib64/libcackey.so\nname=CAC Module' "$firefox_cert_DB/$PKCS_FILENAME" >/dev/null
+    #                then
+    #                    printf "library=/usr/lib64/libcackey.so\nname=CAC Module\n" >> "$firefox_cert_DB/$PKCS_FILENAME"
+    #                fi
+    #            fi
 
-                echo "Done."
-            else
-                echo -e "${INFO_COLOR}[INFO] Could not locate Firefox's cert database${NO_COLOR}"
-            fi
-        else
-            echo -e "${ERR_COLOR}[ERROR] Unable to find Firefox's install directory. Firefox must run at least once.${NO_COLOR}"
-        fi
-    else
-        echo -e "${INFO_COLOR}[INFO] Firefox not installed${NO_COLOR}"
-    fi
+    #            echo "Done."
+    #        else
+    #            echo -e "${INFO_COLOR}[INFO] Could not locate Firefox's cert database${NO_COLOR}"
+    #        fi
+    #    else
+    #        echo -e "${ERR_COLOR}[ERROR] Unable to find Firefox's install directory. Firefox must run at least once.${NO_COLOR}"
+    #    fi
+    #else
+    #    echo -e "${INFO_COLOR}[INFO] Firefox not installed${NO_COLOR}"
+    #fi
 
     # Remove artifacts
     echo -e "${INFO_COLOR}[INFO] Removing artifacts...${NO_COLOR}"
