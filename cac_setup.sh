@@ -72,22 +72,31 @@ main ()
 
     # From testing on Ubuntu 22.04, this process doesn't seem to work well with snap,
     # so the script will ignore databases within snap.
-    mapfile -t < <(find / -name "$DB_FILENAME" 2>/dev/null | grep "firefox\|pki" | grep -v "snap")
-    for db in "${MAPFILE[@]}"
+    mapfile -t databases < <(find / -name "$DB_FILENAME" 2>/dev/null | grep "firefox\|pki" | grep -v "snap")
+    for db in "${databases[@]}"
     do
-        echo "Importing certificates into $db..."
-        echo
-        for cert in "$DWNLD_DIR/$CERT_FILENAME/"*."$CERT_EXTENSION"
-        do
-            db_root=$(dirname "$db")
+        if [ -n "$db" ]
+        then
+            echo "Importing certificates into $db..."
+            echo
+
+            db_root="$(dirname "$db")"
             if [ -n "$db_root" ]
             then
-                echo "Importing $cert"
-                certutil -d sql:"$db_root" -A -t TC -n "$cert" -i "$cert"
+                for cert in "$DWNLD_DIR/$CERT_FILENAME/"*."$CERT_EXTENSION"
+                do
+                    echo "Importing $cert"
+                    certutil -d sql:"$db_root" -A -t TC -n "$cert" -i "$cert"
+                done
+                if ! grep -Pzo 'library=/usr/lib64/libcackey.so\nname=CAC Module\n' "$dbroot/$PKCS_FILENAME" >/dev/null
+                then
+                    printf "library=/usr/lib64/libcackey.so\nname=CAC Module\n" >> "$db_root/$PKCS_FILENAME"
+                fi
             fi
-        done
-        echo "Done loading certificates into $db"
-        echo
+
+            echo "Done loading certificates into $db"
+            echo
+        fi
     done
 
     # Check for Chrome
