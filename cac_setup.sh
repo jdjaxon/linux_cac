@@ -72,15 +72,19 @@ main ()
 
     # From testing on Ubuntu 22.04, this process doesn't seem to work well with snap,
     # so the script will ignore databases within snap.
-    databases=($(find / -name "$DB_FILENAME" 2>/dev/null | grep "firefox\|pki" | grep -v "snap"))
-    for db in $databases
+    mapfile -t < <(find / -name "$DB_FILENAME" 2>/dev/null | grep "firefox\|pki" | grep -v "snap")
+    for db in "${MAPFILE[@]}"
     do
         echo "Importing certificates into $db..."
         echo
         for cert in "$DWNLD_DIR/$CERT_FILENAME/"*."$CERT_EXTENSION"
         do
-            echo "Importing $cert"
-            certutil -d sql:"$chrome_cert_DB" -A -t TC -n "$cert" -i "$cert"
+            db_root=$(dirname "$db")
+            if [ -n "$db_root" ]
+            then
+                echo "Importing $cert"
+                certutil -d sql:"$db_root" -A -t TC -n "$cert" -i "$cert"
+            fi
         done
         echo "Done loading certificates into $db"
         echo
