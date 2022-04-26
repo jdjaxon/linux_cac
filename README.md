@@ -157,6 +157,7 @@ See the official documentation for this issue
 ## Known Issues
 - Firefox and Chrome both need to be started at least once to initialize their respective certificate databases/profiles
 - CAC needs to be inserted before starting Firefox
+- Ubuntu 21.10 and greater (to include the latest LTS 22.04) have Firefox installed via snap by default. There is an outstanding bug (https://bugzilla.mozilla.org/show_bug.cgi?id=1734371) that prevents Firefox from being able to read the certificates. One solution could be to uninstall Firefox from snap and reinstall it via `apt`.
 
 ## Resources
 - https://militarycac.com/linux.htm (this was my starting point)
