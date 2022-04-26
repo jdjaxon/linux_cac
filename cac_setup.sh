@@ -88,7 +88,7 @@ main ()
                     echo "Importing $cert"
                     certutil -d sql:"$db_root" -A -t TC -n "$cert" -i "$cert"
                 done
-                if ! grep -Pzo 'library=/usr/lib64/libcackey.so\nname=CAC Module\n' "$dbroot/$PKCS_FILENAME" >/dev/null
+                if ! grep -Pzo 'library=/usr/lib64/libcackey.so\nname=CAC Module\n' "$db_root/$PKCS_FILENAME" >/dev/null
                 then
                     printf "library=/usr/lib64/libcackey.so\nname=CAC Module\n" >> "$db_root/$PKCS_FILENAME"
                 fi
