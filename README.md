@@ -1,7 +1,7 @@
 # Linux CAC Configuration
-A simple walkthrough for how to consistently configure DOD CACs on Linux. The
-guide currently only covers Ubuntu and PopOS. I created the guide using
-https://militarycac.com/linux.htm and trial and error.
+A project for consistently configuring DOD CACs on Linux. This project currently
+only supports PopOS and Ubuntu 20.04 LTS. I am currently working to provide support
+for Ubuntu 22.04.
 
 ## Table of Contents
 <details>
@@ -23,35 +23,38 @@ https://militarycac.com/linux.htm and trial and error.
 1. [Resources](#resources)
 </details>
 
-## TODOs
-- [x] Script as much of the setup process as possible
-    - [x] Find a way to automate the installation of DOD certificates in Firefox
-- [x] Fix links in the `Automated Installation` section once script is complete
-
 ## Supported Distributions
 Regardless of how similar two distributions may be, I will only list
 distributions and versions here that I know have been tested with this method.
 
-| Distribution | Versions |
-|:-:|:-:|
-| Ubuntu | 20.04 |
-| PopOS! | 21.04 |
-
-## Supported Browsers
-- Chrome
-- Firefox
+| Distribution | Versions | Browsers |
+|:-:|:-:|:-:|
+| Ubuntu | 20.04 LTS | Firefox, Chrome |
+| PopOS! | 20.04 LTS | Firefox, Chrome |
 
 ## Ubuntu and PopOS
+Please run either the [Automated Installation](#automated-installation) or the [Manual Installation](#manual-installation), but not both.
 
-### Automated Installation
-This installation is a scripted version of the [manual installation](#manual-installation) you will find below.
-This script requires root privileges since it installs the `cackey` package and its dependencies.
-Feel free to review the script [here](https://raw.githubusercontent.com/jdjaxon/linux_cac/main/cac_setup.sh) if this makes you uncomfortable.
-For transparency, the `cackey` package is downloaded from [here](https://cackey.rkeene.org/download/0.7.5/cackey_0.7.5-1_amd64.deb) and the DoD certificates are downloaded from [here](https://militarycac.com/maccerts/AllCerts.zip), both of which are recommended by [militarycac](https://militarycac.com).
+### Option 1: Automated Installation
+This installation is a scripted version of the
+[manual installation](#manual-installation) you will find below. This
+script requires root privileges since it installs the `cackey` package and its
+dependencies. Feel free to review the script
+[here](https://raw.githubusercontent.com/jdjaxon/linux_cac/main/cac_setup.sh)
+if this makes you uncomfortable. For transparency, the `cackey` package is
+downloaded from
+[here](https://cackey.rkeene.org/download/0.7.5/cackey_0.7.5-1_amd64.deb) and
+the DoD certificates are downloaded from
+[here](https://militarycac.com/maccerts/AllCerts.zip), both of which are
+recommended by [militarycac](https://militarycac.com).
 
 **Important Notes:**
-- The automated installation requires `wget` and `unzip` to run and will install both during the setup. If you don't want either tool, remove it after the setup is complete using `sudo apt remove <command>`.
-- The scripted installation has only been tested on Ubuntu 20.04
+- The automated installation requires `wget` and `unzip` to run and will
+  install both during the setup, if they are not already installed. If you
+  don't want either tool, remove it after the setup is complete using `sudo apt
+  remove <command>`.
+- The scripted installation has only been tested on the configurations listed in the
+  [Supported Distributions](#supported-distributions)
 - This script uses the 64-bit version of the cackey package.
 
 **WARNING:** Please make sure all browsers are closed before running the script.
@@ -63,14 +66,19 @@ To run the setup script, use the following command:
 | `curl`  | `sudo sh -c "$(curl -fsSL https://raw.githubusercontent.com/jdjaxon/linux_cac/main/cac_setup.sh)"` |
 | `fetch` | `sudo sh -c "$(fetch -o https://raw.githubusercontent.com/jdjaxon/linux_cac/main/cac_setup.sh)"` |
 
-**NOTE:** If you run into any issues with firefox after running the script, restart firefox. Firefox will start up a bit slower.
+**NOTE:** If you run into any issues with firefox after running the script,
+clear your data and history in `Privacy & Security` and then restart firefox.
+Firefox will likely start up a bit slower.
 
+---
 
-### Manual Installation
+### Option 2: Manual Installation
+- **WARNING:** Only perform these steps if you have ***not*** done the [Automated Installation](#automated-installation).
+
 #### Staging
 1. Run the following command to install the CAC middleware:
 ```
-sudo apt install libpcsclite1 pcscd libccid libpcsc-perl pcsc-tools
+sudo apt install libpcsclite1 pcscd libccid libpcsc-perl pcsc-tools libnss3-tools
 ```
 2. To verify that your CAC is detected, run (stop with ctrl+c):
 ```
@@ -147,8 +155,9 @@ See the official documentation for this issue
 
 
 ## Known Issues
-- Firefox needs to be started at least once to build the user's default mozilla directory.
+- Firefox and Chrome both need to be started at least once to initialize their respective certificate databases/profiles
 - CAC needs to be inserted before starting Firefox
+- Ubuntu 21.10 and greater (to include the latest LTS 22.04) have Firefox installed via snap by default. There is an outstanding bug (https://bugzilla.mozilla.org/show_bug.cgi?id=1734371) that prevents Firefox from being able to read the certificates. One solution could be to uninstall Firefox from snap and reinstall it via `apt`.
 
 ## Resources
 - https://militarycac.com/linux.htm (this was my starting point)
