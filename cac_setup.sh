@@ -80,31 +80,33 @@ main ()
             db_root="$(dirname "$db")"
             if [ -n "$db_root" ]
             then
-
                 case "$db_root" in
                     *"pki"*)
-                        echo "Importing certificates for Chrome..."
+                        echo -e "${INFO_COLOR}Importing certificates for Chrome...${NO_COLOR}"
                         echo
                         ;;
                     *"firefox"*)
-                        echo "Importing certificates for Firefox..."
+                        echo -e "${INFO_COLOR}Importing certificates for Firefox...${NO_COLOR}"
                         echo
                         ;;
                 esac
 
+                echo -e "${INFO_COLOR}[INFO] Loading certificates into $db_root ${NO_COLOR}"
+                echo
 
                 for cert in "$DWNLD_DIR/$CERT_FILENAME/"*."$CERT_EXTENSION"
                 do
                     echo "Importing $cert"
                     certutil -d sql:"$db_root" -A -t TC -n "$cert" -i "$cert"
                 done
+
                 if ! grep -Pzo 'library=/usr/lib64/libcackey.so\nname=CAC Module\n' "$db_root/$PKCS_FILENAME" >/dev/null
                 then
                     printf "library=/usr/lib64/libcackey.so\nname=CAC Module\n" >> "$db_root/$PKCS_FILENAME"
                 fi
             fi
 
-            echo "Done loading certificates into $db"
+            echo "Done."
             echo
         else
             echo -e "${INFO_COLOR}[INFO] No databases found.${NO_COLOR}"
