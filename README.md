@@ -62,9 +62,8 @@ recommended by [militarycac](https://militarycac.com).
 To run the setup script, use the following command:
 | Method | Command |
 |:-:|:-:|
-| `wget`  | `sudo sh -c "$(wget https://raw.githubusercontent.com/jdjaxon/linux_cac/main/cac_setup.sh -O -)"` |
-| `curl`  | `sudo sh -c "$(curl -fsSL https://raw.githubusercontent.com/jdjaxon/linux_cac/main/cac_setup.sh)"` |
-| `fetch` | `sudo sh -c "$(fetch -o https://raw.githubusercontent.com/jdjaxon/linux_cac/main/cac_setup.sh)"` |
+| `wget`  | `sudo bash -c "$(wget https://raw.githubusercontent.com/jdjaxon/linux_cac/main/cac_setup.sh -O -)"` |
+| `curl`  | `sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/jdjaxon/linux_cac/main/cac_setup.sh)"` |
 
 **NOTE:** If you run into any issues with firefox after running the script,
 clear your data and history in `Privacy & Security` and then restart firefox.
