@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
 # cac_setup.sh
-# Author: Jeremy Jackson
 # Description: Setup a Linux environment for Common Access Card use.
 
 main ()
@@ -56,9 +55,10 @@ main ()
         exit "$E_INSTALL"
     fi
 
-    # Prevent cackey from upgrading
-    # If cackey upgrades from 7.5 to 7.10, it moves libcackey.so to a different location,
-    # breaking Firefox.
+    # Prevent cackey from upgrading.
+    # If cackey upgrades beyond 7.5, it moves libcackey.so to a different location,
+    # breaking Firefox. Returning libcackey.so to the original location does not
+    # seem to fix this issue.
     if apt-mark hold cackey
     then
         echo -e "${INFO_COLOR}[INFO] Hold placed on cackey package${NO_COLOR}"
@@ -70,32 +70,46 @@ main ()
     mkdir -p "$DWNLD_DIR/$CERT_FILENAME"
     unzip "$DWNLD_DIR/$BUNDLE_FILENAME" -d "$DWNLD_DIR/$CERT_FILENAME"
 
-    # From testing on Ubuntu 22.04, this process doesn't seem to work well with snap,
-    # so the script will ignore databases within snap.
-    mapfile -t databases < <(find / -name "$DB_FILENAME" 2>/dev/null | grep "firefox\|pki" | grep -v "snap")
+    # From testing on Ubuntu 22.04, this process doesn't seem to work well with applications
+    # installed via snap, so the script will ignore databases within snap.
+    mapfile -t databases < <(find "$ORIG_HOME" -name "$DB_FILENAME" 2>/dev/null | grep "firefox\|pki" | grep -v "snap")
     for db in "${databases[@]}"
     do
         if [ -n "$db" ]
         then
-            echo "Importing certificates into $db..."
-            echo
-
             db_root="$(dirname "$db")"
             if [ -n "$db_root" ]
             then
+                case "$db_root" in
+                    *"pki"*)
+                        echo -e "${INFO_COLOR}Importing certificates for Chrome...${NO_COLOR}"
+                        echo
+                        ;;
+                    *"firefox"*)
+                        echo -e "${INFO_COLOR}Importing certificates for Firefox...${NO_COLOR}"
+                        echo
+                        ;;
+                esac
+
+                echo -e "${INFO_COLOR}[INFO] Loading certificates into $db_root ${NO_COLOR}"
+                echo
+
                 for cert in "$DWNLD_DIR/$CERT_FILENAME/"*."$CERT_EXTENSION"
                 do
                     echo "Importing $cert"
                     certutil -d sql:"$db_root" -A -t TC -n "$cert" -i "$cert"
                 done
+
                 if ! grep -Pzo 'library=/usr/lib64/libcackey.so\nname=CAC Module\n' "$db_root/$PKCS_FILENAME" >/dev/null
                 then
                     printf "library=/usr/lib64/libcackey.so\nname=CAC Module\n" >> "$db_root/$PKCS_FILENAME"
                 fi
             fi
 
-            echo "Done loading certificates into $db"
+            echo "Done."
             echo
+        else
+            echo -e "${INFO_COLOR}[INFO] No databases found.${NO_COLOR}"
         fi
     done
 
