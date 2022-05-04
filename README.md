@@ -202,15 +202,17 @@ printf "library=/usr/lib64/libcackey.so\nname=CAC Module" >> "$(dirname "$(find 
   from being able to read the certificates. One solution could be to uninstall
   Firefox from snap and reinstall it via `apt`.
 
-- If you run into any issues with firefox after running the script,
-clear your data and history in `Privacy & Security` and then restart firefox.
-
-- Firefox will likely start up a bit slower after running this installation.
-
 - If you upgraded from 20.04 to 22.04 on either PopOS or Ubuntu, this likely
   also upgraded the cackey package from 7.5 to the latest version, which
   currently breaks this process. You can either rerun the script or run through
   step three through five of the [manual installation](#manual-installation).
+
+- If you run into any issues with firefox after running the script, clear your
+  data and history in `Privacy & Security` and then restart firefox. If your
+  troubles are with MS Teams, see the section for [troubleshooting
+  teams](#microsoft-teams).
+
+- Firefox will likely start up a bit slower after running this installation.
 
 
 ## Troubleshooting
