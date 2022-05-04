@@ -39,12 +39,12 @@ main ()
 
     # Check to see if firefox exists
     echo -e "${INFO_COLOR}[INFO] Checking for Firefox and Chrome...${NO_COLOR}"
-    if which firefox
+    if which firefox >/dev/null
     then
         ff_exists=1
         echo -e "${INFO_COLOR}[INFO] Found Firefox.${NO_COLOR}"
         echo -e "${INFO_COLOR}[INFO] Installation method:${NO_COLOR}"
-        if which firefox | grep snap
+        if which firefox | grep snap >/dev/null
         then
             snap_ff=1
             echo -e "${ERR_COLOR}\t(oh) SNAP!${NO_COLOR}"
@@ -62,17 +62,20 @@ main ()
     fi
 
     # Browser check results
-    if [ $ff_exists -eq 0 ] && [ $CHROME_EXISTS -eq 0 ]
+    if [ "$ff_exists" -eq 0 ] && [ "$CHROME_EXISTS" -eq 0 ]
     then
         echo -e "${ERR_COLOR}No version of Mozilla Firefox OR Google Chrome have \
         been detected.\nPlease install either or both to proceed.${NO_COLOR}"
 
         exit "$E_BROWSER"
 
-    elif [ $ff_exists -eq 1 ]
+    elif [ "$ff_exists" -eq 1 ]
     then
-        if [ $snap_ff -eq 1 ]
+        echo "DEBUG: CHECKING FOR SNAP"
+        if [ "$snap_ff" -eq 1 ]
         then
+
+        echo "DEBUG: SNAP WAS FOUND"
             echo -e "${INFO_COLOR}\
             ********************[IMPORTANT]********************\n
             * The version of Firefox you have installed       *\n
