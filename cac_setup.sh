@@ -72,8 +72,8 @@ main ()
     then
         if [ "$snap_ff" -eq 1 ]
         then
-            echo -e "${INFO_COLOR}\
-            ********************[IMPORTANT]********************
+            echo -e "
+            ********************${INFO_COLOR}[IMPORTANT]${NO_COLOR}********************
             * The version of Firefox you have installed       *
             * currently was installed via snap.               *
             * This version of Firefox is not currently        *
@@ -86,21 +86,20 @@ main ()
             * If you are not signed in to Firefox, you will   *
             * likely lose bookmarks or other personalizations *
             * set in the current variant of Firefox.          *
-            ********************[IMPORTANT]********************\n
-            ${NO_COLOR}"
+            ********************${INFO_COLOR}[IMPORTANT]${NO_COLOR}********************\n"
 
             choice=''
 
             while [ "$choice" != "y" ] && [ "$choice" != "n" ]
             do
-                echo -e "${ERR_COLOR}\nWould you like to proceed with the switch to the apt version?${INFO_COLOR}(\"y/n\")${NO_COLOR}"
+                echo -e "${ERR_COLOR}\nWould you like to proceed with the switch to the apt version? ${INFO_COLOR}(\"y/n\")${NO_COLOR}"
 
                 read -rp '> ' choice
             done
 
             if [ "$choice" == "y" ]
             then
-                snap remove firefox
+                snap remove --purge firefox
                 add-apt-repository -y ppa:mozillateam/ppa
                 echo "Package: *\nPin: release o=LP-PPA-mozillateam\nPin-Priority: 1001" | tee /etc/apt/preferences.d/mozilla-firefox
                 echo 'Unattended-Upgrade::Allowed-Origins:: "LP-PPA-mozillateam:${distro_codename}";' | tee /etc/apt/apt.conf.d/51unattended-upgrades-firefox
