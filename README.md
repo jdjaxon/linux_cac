@@ -9,7 +9,7 @@ this project, please review the [Known Issues](#known-issues) section.
 
 <details>
 <summary>
-<b>Click to Expand</b>
+<b>Click to Toggle Expansion</b>
 </summary>
 
 1. [Supported Configurations](#supported-configurations)
@@ -52,7 +52,7 @@ Please run either the [Automated Installation](#automated-installation) or the
 
 <details>
 <summary>
-<b>Click to Expand</b>
+<b>Click to Toggle Expansion</b>
 </summary>
 
 \
@@ -107,7 +107,7 @@ sudo bash -c "$(fetch -o https://raw.githubusercontent.com/jdjaxon/linux_cac/mai
 
 <details>
 <summary>
-<b>Click to Expand</b>
+<b>Click to Toggle Expansion</b>
 </summary>
 
 \
