@@ -13,8 +13,12 @@ main ()
     EXIT_SUCCESS=0          # Success exit code
     E_INSTALL=85            # Installation failed
     E_NOTROOT=86            # Non-root exit error
+    E_BROWSER=87            # Compatible browser not found
     ROOT_UID=0              # Only users with $UID 0 have root privileges
     DWNLD_DIR="/tmp"        # Reliable location to place artifacts
+    CHROME_EXISTS=0         # Google Chrome is installed
+    ff_exists=0             # Firefox is installed
+    snap_ff=0               # Flag to prompt for how to handle snap Firefox
 
     ORIG_HOME="$(getent passwd "$SUDO_USER" | cut -d: -f6)"
     CERT_EXTENSION="cer"
@@ -32,6 +36,101 @@ main ()
         echo -e "${ERR_COLOR}[ERROR] Please run this script as root.${NO_COLOR}"
         exit "$E_NOTROOT"
     fi
+
+    # Check to see if firefox exists
+    echo -e "${INFO_COLOR}[INFO] Checking for Firefox and Chrome...${NO_COLOR}"
+    if which firefox
+    then
+        ff_exists=1
+        echo -e "${INFO_COLOR}[INFO] Found Firefox.${NO_COLOR}"
+        echo -e "${INFO_COLOR}[INFO] Installation method:${NO_COLOR}"
+        if which firefox | grep snap
+        then
+            snap_ff=1
+            echo -e "${ERR_COLOR}\t(oh) SNAP!${NO_COLOR}"
+        else
+
+        echo -e "${INFO_COLOR}\tapt (or just not snap):${NO_COLOR}"
+        fi
+    fi
+
+    # Check to see if Chrome exists
+    if which google-chrome
+    then
+        CHROME_EXISTS=1
+        echo -e "${INFO_COLOR}[INFO] Found Google Chrome.${NO_COLOR}"
+    fi
+
+    # Browser check results
+    if [ $ff_exists -eq 0 ] && [ $CHROME_EXISTS -eq 0 ]
+    then
+        echo -e "${ERR_COLOR}No version of Mozilla Firefox OR Google Chrome have \
+        been detected.\nPlease install either or both to proceed.${NO_COLOR}"
+
+        exit "$E_BROWSER"
+
+    elif [ $ff_exists -eq 0 ]
+    then
+        if [ $snap_ff -eq 1 ]
+        then
+            echo -e "${INFO_COLOR}\
+            ********************[IMPORTANT]********************\n
+            * The version of Firefox you have installed       *\n
+            * currently was installed via snap.               *\n
+            * This version of Firefox is not currently        *\n
+            * compatible with the method used to enable CAC   *\n
+            * support in browsers.                            *\n
+            *                                                 *\n
+            * As a work-around, this script can automatically *\n
+            * remove the snap version and reinstall via apt.  *\n
+            *                                                 *\n
+            * If you are not signed in to Firefox, you will   *\n
+            * likely lose bookmarks or other personalizations *\n
+            * set in the current variant of Firefox.          *\n
+            ********************[IMPORTANT]********************\n
+            ${NO_COLOR}"
+
+            choice=''
+
+            while [ "$choice" != "y" ] && [ "$choice" != "n" ]
+            do
+                echo -e "${ERR_COLOR}\nWould you like to proceed with the switch to \
+                the apt version? (\"y/n\")${NO_COLOR}"
+
+                read -rp '> ' choice
+            done
+
+            if [ "$choice" == "y" ]
+            then
+                snap remove firefox
+
+                add-apt-repository -y ppa:mozillateam/ppa
+
+                echo '
+                Package: *
+                Pin: release o=LP-PPA-mozillateam
+                Pin-Priority: 1001
+                ' | tee /etc/apt/preferences.d/mozilla-firefox
+
+                echo 'Unattended-Upgrade::Allowed-Origins:: "LP-PPA-mozillateam:${distro_codename}";' | tee /etc/apt/apt.conf.d/51unattended-upgrades-firefox
+
+                apt install firefox
+            else
+                if [ $CHROME_EXISTS -eq 0 ]
+                then
+                    echo -e "${ERR_COLOR}You have elected to keep the snap \
+                    version of Firefox. You also do not currently have \
+                    Google Chrome installed. Therefore, you have no compatible \
+                    browsers. \n\n Exiting!\n${NO_COLOR}"
+
+                    exit $E_BROWSER
+                fi
+            fi
+        fi
+
+    fi
+
+
 
     # Install middleware and necessary utilities
     echo -e "${INFO_COLOR}[INFO] Installing middleware...${NO_COLOR}"
