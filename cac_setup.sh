@@ -71,25 +71,22 @@ main ()
 
     elif [ "$ff_exists" -eq 1 ]
     then
-        echo "DEBUG: CHECKING FOR SNAP"
         if [ "$snap_ff" -eq 1 ]
         then
-
-        echo "DEBUG: SNAP WAS FOUND"
             echo -e "${INFO_COLOR}\
-            ********************[IMPORTANT]********************\n
-            * The version of Firefox you have installed       *\n
-            * currently was installed via snap.               *\n
-            * This version of Firefox is not currently        *\n
-            * compatible with the method used to enable CAC   *\n
-            * support in browsers.                            *\n
-            *                                                 *\n
-            * As a work-around, this script can automatically *\n
-            * remove the snap version and reinstall via apt.  *\n
-            *                                                 *\n
-            * If you are not signed in to Firefox, you will   *\n
-            * likely lose bookmarks or other personalizations *\n
-            * set in the current variant of Firefox.          *\n
+            ********************[IMPORTANT]********************
+            * The version of Firefox you have installed       *
+            * currently was installed via snap.               *
+            * This version of Firefox is not currently        *
+            * compatible with the method used to enable CAC   *
+            * support in browsers.                            *
+            *                                                 *
+            * As a work-around, this script can automatically *
+            * remove the snap version and reinstall via apt.  *
+            *                                                 *
+            * If you are not signed in to Firefox, you will   *
+            * likely lose bookmarks or other personalizations *
+            * set in the current variant of Firefox.          *
             ********************[IMPORTANT]********************\n
             ${NO_COLOR}"
 
@@ -97,8 +94,8 @@ main ()
 
             while [ "$choice" != "y" ] && [ "$choice" != "n" ]
             do
-                echo -e "${ERR_COLOR}\nWould you like to proceed with the switch to \
-                the apt version? (\"y/n\")${NO_COLOR}"
+                echo -e '${ERR_COLOR}\nWould you like to proceed with the switch\
+                 to the apt version? (\"y/n\")${NO_COLOR}'
 
                 read -rp '> ' choice
             done
@@ -121,8 +118,7 @@ main ()
             else
                 if [ $CHROME_EXISTS -eq 0 ]
                 then
-                    echo -e "${ERR_COLOR}You have elected to keep the snap \
-                    version of Firefox. You also do not currently have \
+                    echo -e "${ERR_COLOR}You have elected to keep the snap version of Firefox. You also do not currently have \
                     Google Chrome installed. Therefore, you have no compatible \
                     browsers. \n\n Exiting!\n${NO_COLOR}"
 
