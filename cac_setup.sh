@@ -1,26 +1,25 @@
 #!/usr/bin/env bash
 
 # cac_setup.sh
-# Author: Jeremy Jackson
-# Date: 24 Feb 2022
 # Description: Setup a Linux environment for Common Access Card use.
 
 main ()
 {
     # For colorization
-    ERR_COLOR='\033[0;31m' # Red for error messages
-    NO_COLOR='\033[0m'     # Revert terminal back to no color
+    ERR_COLOR='\033[0;31m'  # Red for error messages
+    INFO_COLOR='\033[0;33m' # Yellow for notes
+    NO_COLOR='\033[0m'      # Revert terminal back to no color
 
-    EXIT_SUCCESS=0         # Success exit code
-    E_INSTALL=85           # Installation failed
-    E_NOTROOT=86           # Non-root exit error
-    ROOT_UID=0             # Only users with $UID 0 have root privileges
-    DWNLD_DIR="/tmp"       # Reliable location to place artifacts
+    EXIT_SUCCESS=0          # Success exit code
+    E_INSTALL=85            # Installation failed
+    E_NOTROOT=86            # Non-root exit error
+    ROOT_UID=0              # Only users with $UID 0 have root privileges
+    DWNLD_DIR="/tmp"        # Reliable location to place artifacts
 
     ORIG_HOME="$(getent passwd "$SUDO_USER" | cut -d: -f6)"
     CERT_EXTENSION="cer"
     PKCS_FILENAME="pkcs11.txt"
-    NSSDB_FILENAME="cert9.db"
+    DB_FILENAME="cert9.db"
     CERT_FILENAME="AllCerts"
     BUNDLE_FILENAME="AllCerts.zip"
     CERT_URL="http://militarycac.com/maccerts/$BUNDLE_FILENAME"
@@ -30,104 +29,96 @@ main ()
     # Ensure the script is ran as root
     if [ "${EUID:-$(id -u)}" -ne "$ROOT_UID" ]
     then
-        echo "Please run this script as root."
+        echo -e "${ERR_COLOR}[ERROR] Please run this script as root.${NO_COLOR}"
         exit "$E_NOTROOT"
     fi
 
     # Install middleware and necessary utilities
-    echo "Installing middleware..."
+    echo -e "${INFO_COLOR}[INFO] Installing middleware...${NO_COLOR}"
     apt update
     DEBIAN_FRONTEND=noninteractive apt install -y libpcsclite1 pcscd libccid libpcsc-perl pcsc-tools libnss3-tools unzip wget
     echo "Done"
 
     # Pull all necessary files
-    echo "Downloading DoD certificates and Cackey package..."
+    echo -e "${INFO_COLOR}[INFO] Downloading DoD certificates and Cackey package...${NO_COLOR}"
     wget -qP "$DWNLD_DIR" "$CERT_URL"
     wget -qP "$DWNLD_DIR" "$CACKEY_URL"
     echo "Done."
 
     # Install libcackey.
-    echo "Installing libcackey..."
+    echo -e "${INFO_COLOR}[INFO] Installing libcackey...${NO_COLOR}"
     if dpkg -i "$DWNLD_DIR/$PKG_FILENAME"
     then
         echo "Done."
     else
-        echo "${ERR_COLOR}error:${NO_COLOR} installation failed. Exitting..."
+        echo -e "${ERR_COLOR}[ERROR] Installation failed. Exiting...${NO_COLOR}"
         exit "$E_INSTALL"
     fi
 
-    # Prevent cackey from upgrading
-    # If cackey upgrades from 7.5 to 7.10, it moves libcackey.so to a different location,
-    # breaking Firefox.
+    # Prevent cackey from upgrading.
+    # If cackey upgrades beyond 7.5, it moves libcackey.so to a different location,
+    # breaking Firefox. Returning libcackey.so to the original location does not
+    # seem to fix this issue.
     if apt-mark hold cackey
     then
-        echo "Hold placed on cackey package."
+        echo -e "${INFO_COLOR}[INFO] Hold placed on cackey package${NO_COLOR}"
     else
-        echo "${ERR_COLOR}error:${NO_COLOR} failed to place hold on cackey package."
+        echo -e "${ERR_COLOR}[ERROR] Failed to place hold on cackey package${NO_COLOR}"
     fi
 
     # Unzip cert bundle
     mkdir -p "$DWNLD_DIR/$CERT_FILENAME"
     unzip "$DWNLD_DIR/$BUNDLE_FILENAME" -d "$DWNLD_DIR/$CERT_FILENAME"
 
-    # Check for Chrome
-    if sudo -u $SUDO_USER google-chrome --version
-    then
-        # Locate Firefox's database directory in the user's profile
-        if chrome_cert_DB="$(dirname "$(find "$ORIG_HOME/.pki" -name "$NSSDB_FILENAME")")"
+    # From testing on Ubuntu 22.04, this process doesn't seem to work well with applications
+    # installed via snap, so the script will ignore databases within snap.
+    mapfile -t databases < <(find "$ORIG_HOME" -name "$DB_FILENAME" 2>/dev/null | grep "firefox\|pki" | grep -v "snap")
+    for db in "${databases[@]}"
+    do
+        if [ -n "$db" ]
         then
-            # Import DoD certificates
-            echo "Importing DoD certificates for Chrome..."
-            for cert in "$DWNLD_DIR/$CERT_FILENAME/"*."$CERT_EXTENSION"
-            do
-                echo "Importing $cert"
-                certutil -d sql:"$chrome_cert_DB" -A -t TC -n "$cert" -i "$cert"
-            done
-
-            # Point DB security module to libcackey.so with the PKCS file, if it exists.
-            if [ -f "$chrome_cert_DB/$PKCS_FILENAME" ]
+            db_root="$(dirname "$db")"
+            if [ -n "$db_root" ]
             then
-                printf "library=/usr/lib64/libcackey.so\nname=CAC Module\n" >> "$chrome_cert_DB/$PKCS_FILENAME"
+                case "$db_root" in
+                    *"pki"*)
+                        echo -e "${INFO_COLOR}Importing certificates for Chrome...${NO_COLOR}"
+                        echo
+                        ;;
+                    *"firefox"*)
+                        echo -e "${INFO_COLOR}Importing certificates for Firefox...${NO_COLOR}"
+                        echo
+                        ;;
+                esac
+
+                echo -e "${INFO_COLOR}[INFO] Loading certificates into $db_root ${NO_COLOR}"
+                echo
+
+                for cert in "$DWNLD_DIR/$CERT_FILENAME/"*."$CERT_EXTENSION"
+                do
+                    echo "Importing $cert"
+                    certutil -d sql:"$db_root" -A -t TC -n "$cert" -i "$cert"
+                done
+
+                if ! grep -Pzo 'library=/usr/lib64/libcackey.so\nname=CAC Module\n' "$db_root/$PKCS_FILENAME" >/dev/null
+                then
+                    printf "library=/usr/lib64/libcackey.so\nname=CAC Module\n" >> "$db_root/$PKCS_FILENAME"
+                fi
             fi
 
             echo "Done."
+            echo
         else
-            echo "${ERR_COLOR}error:${NO_COLOR} unable to find Chromes's certificate database"
+            echo -e "${INFO_COLOR}[INFO] No databases found.${NO_COLOR}"
         fi
-    fi
-
-    # Check for Firefox
-    if sudo -u $SUDO_USER firefox --version
-    then
-        # Locate Firefox's database directory in the user's profile
-        if firefox_cert_DB="$(dirname "$(find "$ORIG_HOME/.mozilla/" -name "$NSSDB_FILENAME")")"
-        then
-            # Import DoD certificates
-            echo "Importing DoD certificates for Firefox..."
-            for cert in "$DWNLD_DIR/$CERT_FILENAME/"*."$CERT_EXTENSION"
-            do
-                echo "Importing $cert"
-                certutil -d sql:"$firefox_cert_DB" -A -t TC -n "$cert" -i "$cert"
-            done
-
-            # Point DB security module to libcackey.so with the PKCS file, if it exists.
-            if [ -f "$firefox_cert_DB/$PKCS_FILENAME" ]
-            then
-                printf "library=/usr/lib64/libcackey.so\nname=CAC Module\n" >> "$firefox_cert_DB/$PKCS_FILENAME"
-            fi
-
-            echo "Done."
-        else
-            echo "${ERR_COLOR}error:${NO_COLOR} unable to find Firefox's certificate database"
-        fi
-    fi
+    done
 
     # Remove artifacts
-    echo "Removing artifacts..."
+    echo -e "${INFO_COLOR}[INFO] Removing artifacts...${NO_COLOR}"
     rm -rf "${DWNLD_DIR:?}"/{"$BUNDLE_FILENAME","$CERT_FILENAME","$PKG_FILENAME"}
     if [ "$?" -ne "$EXIT_SUCCESS" ]
     then
-        echo "${ERR_COLOR}error:${NO_COLOR} failed to remove artifacts"
+        echo -e "${ERR_COLOR}[ERROR] Failed to remove artifacts${NO_COLOR}"
     else
         echo "Done."
     fi
