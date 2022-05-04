@@ -93,7 +93,7 @@ main ()
 
             while [ "$choice" != "y" ] && [ "$choice" != "n" ]
             do
-                echo -e "${ERR_COLOR}\nWould you like to proceed with the switch to the apt version? (\"y/n\")${NO_COLOR}"
+                echo -e "${ERR_COLOR}\nWould you like to proceed with the switch to the apt version?${INFO_COLOR}(\"y/n\")${NO_COLOR}"
 
                 read -rp '> ' choice
             done
@@ -108,8 +108,7 @@ main ()
             else
                 if [ $CHROME_EXISTS -eq 0 ]
                 then
-                    echo -e "${ERR_COLOR}You have elected to keep the snap version of Firefox. You also do not currently have \
-                    Google Chrome installed. Therefore, you have no compatible browsers. \n\n Exiting!\n${NO_COLOR}"
+                    echo -e "You have elected to keep the snap version of Firefox. You also do not currently have Google Chrome installed. Therefore, you have no compatible browsers. \n\n Exiting!\n"
 
                     exit $E_BROWSER
                 fi
