@@ -64,8 +64,7 @@ main ()
     # Browser check results
     if [ "$ff_exists" -eq 0 ] && [ "$CHROME_EXISTS" -eq 0 ]
     then
-        echo -e "${ERR_COLOR}No version of Mozilla Firefox OR Google Chrome have \
-        been detected.\nPlease install either or both to proceed.${NO_COLOR}"
+        echo -e "${ERR_COLOR}No version of Mozilla Firefox OR Google Chrome have been detected.\nPlease install either or both to proceed.${NO_COLOR}"
 
         exit "$E_BROWSER"
 
@@ -94,8 +93,7 @@ main ()
 
             while [ "$choice" != "y" ] && [ "$choice" != "n" ]
             do
-                echo -e '${ERR_COLOR}\nWould you like to proceed with the switch\
-                 to the apt version? (\"y/n\")${NO_COLOR}'
+                echo -e "${ERR_COLOR}\nWould you like to proceed with the switch to the apt version? (\"y/n\")${NO_COLOR}"
 
                 read -rp '> ' choice
             done
@@ -103,24 +101,15 @@ main ()
             if [ "$choice" == "y" ]
             then
                 snap remove firefox
-
                 add-apt-repository -y ppa:mozillateam/ppa
-
-                echo '
-                Package: *
-                Pin: release o=LP-PPA-mozillateam
-                Pin-Priority: 1001
-                ' | tee /etc/apt/preferences.d/mozilla-firefox
-
+                echo "Package: *\nPin: release o=LP-PPA-mozillateam\nPin-Priority: 1001" | tee /etc/apt/preferences.d/mozilla-firefox
                 echo 'Unattended-Upgrade::Allowed-Origins:: "LP-PPA-mozillateam:${distro_codename}";' | tee /etc/apt/apt.conf.d/51unattended-upgrades-firefox
-
                 apt install firefox
             else
                 if [ $CHROME_EXISTS -eq 0 ]
                 then
                     echo -e "${ERR_COLOR}You have elected to keep the snap version of Firefox. You also do not currently have \
-                    Google Chrome installed. Therefore, you have no compatible \
-                    browsers. \n\n Exiting!\n${NO_COLOR}"
+                    Google Chrome installed. Therefore, you have no compatible browsers. \n\n Exiting!\n${NO_COLOR}"
 
                     exit $E_BROWSER
                 fi
