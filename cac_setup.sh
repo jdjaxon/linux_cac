@@ -69,7 +69,7 @@ main ()
 
         exit "$E_BROWSER"
 
-    elif [ $ff_exists -eq 0 ]
+    elif [ $ff_exists -eq 1 ]
     then
         if [ $snap_ff -eq 1 ]
         then
