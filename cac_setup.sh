@@ -105,9 +105,9 @@ main ()
                 echo -e "${INFO_COLOR}[INFO] Adding PPA for Mozilla maintained Firefox${NO_COLOR}"
                 add-apt-repository -y ppa:mozillateam/ppa
                 echo -e "${INFO_COLOR}[INFO] Setting priority to prefer Mozilla PPA over snap package${NO_COLOR}"
-                echo "Package: *\nPin: release o=LP-PPA-mozillateam\nPin-Priority: 1001" | tee /etc/apt/preferences.d/mozilla-firefox
+                echo -e "Package: *\nPin: release o=LP-PPA-mozillateam\nPin-Priority: 1001" | tee /etc/apt/preferences.d/mozilla-firefox
                 echo -e "${INFO_COLOR}[INFO] Enabling updates for future firefox releases${NO_COLOR}"
-                echo 'Unattended-Upgrade::Allowed-Origins:: "LP-PPA-mozillateam:${distro_codename}";' | tee /etc/apt/apt.conf.d/51unattended-upgrades-firefox
+                echo -e 'Unattended-Upgrade::Allowed-Origins:: "LP-PPA-mozillateam:${distro_codename}";' | tee /etc/apt/apt.conf.d/51unattended-upgrades-firefox
                 echo -e "${INFO_COLOR}[INFO] Installing Firefox via apt${NO_COLOR}"
                 apt install firefox
                 echo -e "${INFO_COLOR}[INFO] Completed re-installation of Firefox${NO_COLOR}"
