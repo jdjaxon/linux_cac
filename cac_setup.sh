@@ -33,17 +33,17 @@ main ()
     # Ensure the script is ran as root
     if [ "${EUID:-$(id -u)}" -ne "$ROOT_UID" ]
     then
-        echo -e "${ERR_COLOR}[ERROR] Please run this script as root.${NO_COLOR}"
+        echo -e "${ERR_COLOR}[ERROR]${NO_COLOR} Please run this script as root."
         exit "$E_NOTROOT"
     fi
 
     # Check to see if firefox exists
-    echo -e "${INFO_COLOR}[INFO] Checking for Firefox and Chrome...${NO_COLOR}"
+    echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Checking for Firefox and Chrome..."
     if which firefox >/dev/null
     then
         ff_exists=1
-        echo -e "${INFO_COLOR}[INFO] Found Firefox.${NO_COLOR}"
-        echo -e "${INFO_COLOR}[INFO] Installation method:${NO_COLOR}"
+        echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Found Firefox."
+        echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Installation method:"
         if which firefox | grep snap >/dev/null
         then
             snap_ff=1
@@ -52,13 +52,18 @@ main ()
 
         echo -e "${INFO_COLOR}\tapt (or just not snap):${NO_COLOR}"
         fi
+    else
+
+        echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Firefox not found."
     fi
 
     # Check to see if Chrome exists
-    if which google-chrome
+    if which google-chrome >/dev/null
     then
         CHROME_EXISTS=1
-        echo -e "${INFO_COLOR}[INFO] Found Google Chrome.${NO_COLOR}"
+        echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Found Google Chrome."
+    else
+        echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Chrome not found."
     fi
 
     # Browser check results
@@ -100,17 +105,28 @@ main ()
             if [ "$choice" == "y" ]
             then
             # Replace snap Firefox with version from PPA maintained via Mozilla
-                echo -e "${INFO_COLOR}[INFO] Removing Snap version of Firefox${NO_COLOR}"
+                echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Removing Snap version of Firefox"
                 snap remove --purge firefox
-                echo -e "${INFO_COLOR}[INFO] Adding PPA for Mozilla maintained Firefox${NO_COLOR}"
+                echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Adding PPA for Mozilla maintained Firefox"
                 add-apt-repository -y ppa:mozillateam/ppa
-                echo -e "${INFO_COLOR}[INFO] Setting priority to prefer Mozilla PPA over snap package${NO_COLOR}"
+                echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Setting priority to prefer Mozilla PPA over snap package"
                 echo -e "Package: *\nPin: release o=LP-PPA-mozillateam\nPin-Priority: 1001" | tee /etc/apt/preferences.d/mozilla-firefox
-                echo -e "${INFO_COLOR}[INFO] Enabling updates for future firefox releases${NO_COLOR}"
+                echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Enabling updates for future firefox releases"
                 echo -e 'Unattended-Upgrade::Allowed-Origins:: "LP-PPA-mozillateam:${distro_codename}";' | tee /etc/apt/apt.conf.d/51unattended-upgrades-firefox
-                echo -e "${INFO_COLOR}[INFO] Installing Firefox via apt${NO_COLOR}"
-                apt install firefox
-                echo -e "${INFO_COLOR}[INFO] Completed re-installation of Firefox${NO_COLOR}"
+                echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Installing Firefox via apt"
+                apt install firefox -y
+                echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Completed re-installation of Firefox"
+
+                # Forget the old location of firefox
+                hash -d firefox
+
+                echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Starting Firefox silently to complete post-install actions..."
+                firefox --headless --first-startup >/dev/null 2>1 &
+                sleep 2
+
+                pkill -9 firefox
+                echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Finished, closing Firefox."
+
                 snap_ff=0
             else
                 if [ $CHROME_EXISTS -eq 0 ]
@@ -121,30 +137,29 @@ main ()
                 fi
             fi
         fi
-
     fi
 
 
 
     # Install middleware and necessary utilities
-    echo -e "${INFO_COLOR}[INFO] Installing middleware...${NO_COLOR}"
+    echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Installing middleware..."
     apt update
     DEBIAN_FRONTEND=noninteractive apt install -y libpcsclite1 pcscd libccid libpcsc-perl pcsc-tools libnss3-tools unzip wget
     echo "Done"
 
     # Pull all necessary files
-    echo -e "${INFO_COLOR}[INFO] Downloading DoD certificates and Cackey package...${NO_COLOR}"
+    echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Downloading DoD certificates and Cackey package..."
     wget -qP "$DWNLD_DIR" "$CERT_URL"
     wget -qP "$DWNLD_DIR" "$CACKEY_URL"
     echo "Done."
 
     # Install libcackey.
-    echo -e "${INFO_COLOR}[INFO] Installing libcackey...${NO_COLOR}"
+    echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Installing libcackey..."
     if dpkg -i "$DWNLD_DIR/$PKG_FILENAME"
     then
         echo "Done."
     else
-        echo -e "${ERR_COLOR}[ERROR] Installation failed. Exiting...${NO_COLOR}"
+        echo -e "${ERR_COLOR}[ERROR]${NO_COLOR} Installation failed. Exiting..."
         exit "$E_INSTALL"
     fi
 
@@ -154,9 +169,9 @@ main ()
     # seem to fix this issue.
     if apt-mark hold cackey
     then
-        echo -e "${INFO_COLOR}[INFO] Hold placed on cackey package${NO_COLOR}"
+        echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Hold placed on cackey package"
     else
-        echo -e "${ERR_COLOR}[ERROR] Failed to place hold on cackey package${NO_COLOR}"
+        echo -e "${ERR_COLOR}[ERROR]${NO_COLOR} Failed to place hold on cackey package"
     fi
 
     # Unzip cert bundle
@@ -175,16 +190,16 @@ main ()
             then
                 case "$db_root" in
                     *"pki"*)
-                        echo -e "${INFO_COLOR}Importing certificates for Chrome...${NO_COLOR}"
+                        echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Importing certificates for Chrome..."
                         echo
                         ;;
                     *"firefox"*)
-                        echo -e "${INFO_COLOR}Importing certificates for Firefox...${NO_COLOR}"
+                        echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Importing certificates for Firefox..."
                         echo
                         ;;
                 esac
 
-                echo -e "${INFO_COLOR}[INFO] Loading certificates into $db_root ${NO_COLOR}"
+                echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Loading certificates into $db_root "
                 echo
 
                 for cert in "$DWNLD_DIR/$CERT_FILENAME/"*."$CERT_EXTENSION"
@@ -202,16 +217,16 @@ main ()
             echo "Done."
             echo
         else
-            echo -e "${INFO_COLOR}[INFO] No databases found.${NO_COLOR}"
+            echo -e "${INFO_COLOR}[INFO]${NO_COLOR} No databases found."
         fi
     done
 
     # Remove artifacts
-    echo -e "${INFO_COLOR}[INFO] Removing artifacts...${NO_COLOR}"
+    echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Removing artifacts..."
     rm -rf "${DWNLD_DIR:?}"/{"$BUNDLE_FILENAME","$CERT_FILENAME","$PKG_FILENAME"}
     if [ "$?" -ne "$EXIT_SUCCESS" ]
     then
-        echo -e "${ERR_COLOR}[ERROR] Failed to remove artifacts${NO_COLOR}"
+        echo -e "${ERR_COLOR}[ERROR]${NO_COLOR} Failed to remove artifacts"
     else
         echo "Done."
     fi
