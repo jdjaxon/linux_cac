@@ -6,8 +6,8 @@
 main ()
 {
     # For colorization
-    ERR_COLOR='\033[0;31m'  # Red for error messages
     INFO_COLOR='\033[0;33m' # Yellow for notes
+    ERR_COLOR='\033[0;31m'  # Red for error messages
     NO_COLOR='\033[0m'      # Revert terminal back to no color
 
     EXIT_SUCCESS=0          # Success exit code
@@ -16,7 +16,7 @@ main ()
     E_BROWSER=87            # Compatible browser not found
     ROOT_UID=0              # Only users with $UID 0 have root privileges
     DWNLD_DIR="/tmp"        # Reliable location to place artifacts
-    CHROME_EXISTS=0         # Google Chrome is installed
+    chrome_exists=0         # Google Chrome is installed
     ff_exists=0             # Firefox is installed
     snap_ff=0               # Flag to prompt for how to handle snap Firefox
 
@@ -39,12 +39,12 @@ main ()
 
     # Check to see if firefox exists
     echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Checking for Firefox and Chrome..."
-    if which firefox >/dev/null
+    if command -v firefox >/dev/null
     then
         ff_exists=1
         echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Found Firefox."
         echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Installation method:"
-        if which firefox | grep snap >/dev/null
+        if command -v firefox | grep snap >/dev/null
         then
             snap_ff=1
             echo -e "${ERR_COLOR}\t(oh) SNAP!${NO_COLOR}"
@@ -53,26 +53,24 @@ main ()
         echo -e "${INFO_COLOR}\tapt (or just not snap):${NO_COLOR}"
         fi
     else
-
         echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Firefox not found."
     fi
 
     # Check to see if Chrome exists
-    if which google-chrome >/dev/null
+    if command -v google-chrome >/dev/null
     then
-        CHROME_EXISTS=1
+        chrome_exists=1
         echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Found Google Chrome."
     else
         echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Chrome not found."
     fi
 
     # Browser check results
-    if [ "$ff_exists" -eq 0 ] && [ "$CHROME_EXISTS" -eq 0 ]
+    if [ "$ff_exists" -eq 0 ] && [ "$chrome_exists" -eq 0 ]
     then
         echo -e "${ERR_COLOR}No version of Mozilla Firefox OR Google Chrome have been detected.\nPlease install either or both to proceed.${NO_COLOR}"
 
         exit "$E_BROWSER"
-
     elif [ "$ff_exists" -eq 1 ]
     then
         if [ "$snap_ff" -eq 1 ]
@@ -112,6 +110,7 @@ main ()
                 echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Setting priority to prefer Mozilla PPA over snap package"
                 echo -e "Package: *\nPin: release o=LP-PPA-mozillateam\nPin-Priority: 1001" | tee /etc/apt/preferences.d/mozilla-firefox
                 echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Enabling updates for future firefox releases"
+                # shellcheck disable=SC2016
                 echo -e 'Unattended-Upgrade::Allowed-Origins:: "LP-PPA-mozillateam:${distro_codename}";' | tee /etc/apt/apt.conf.d/51unattended-upgrades-firefox
                 echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Installing Firefox via apt"
                 apt install firefox -y
@@ -121,7 +120,7 @@ main ()
                 hash -d firefox
 
                 echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Starting Firefox silently to complete post-install actions..."
-                firefox --headless --first-startup >/dev/null 2>1 &
+                firefox --headless --first-startup >/dev/null 2>&1 &
                 sleep 2
 
                 pkill -9 firefox
@@ -129,7 +128,7 @@ main ()
 
                 snap_ff=0
             else
-                if [ $CHROME_EXISTS -eq 0 ]
+                if [ $chrome_exists -eq 0 ]
                 then
                     echo -e "You have elected to keep the snap version of Firefox. You also do not currently have Google Chrome installed. Therefore, you have no compatible browsers. \n\n Exiting!\n"
 
@@ -138,8 +137,6 @@ main ()
             fi
         fi
     fi
-
-
 
     # Install middleware and necessary utilities
     echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Installing middleware..."
@@ -154,13 +151,16 @@ main ()
     echo "Done."
 
     # Install libcackey.
-    echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Installing libcackey..."
-    if dpkg -i "$DWNLD_DIR/$PKG_FILENAME"
+    if [ -e "$DWNLD_DIR/$PKG_FILENAME" ]
     then
-        echo "Done."
-    else
-        echo -e "${ERR_COLOR}[ERROR]${NO_COLOR} Installation failed. Exiting..."
-        exit "$E_INSTALL"
+        echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Installing libcackey..."
+        if dpkg -i "$DWNLD_DIR/$PKG_FILENAME"
+        then
+            echo "Done."
+        else
+            echo -e "${ERR_COLOR}[ERROR]${NO_COLOR} Installation failed. Exiting..."
+            exit "$E_INSTALL"
+        fi
     fi
 
     # Prevent cackey from upgrading.
@@ -175,11 +175,12 @@ main ()
     fi
 
     # Unzip cert bundle
-    mkdir -p "$DWNLD_DIR/$CERT_FILENAME"
-    unzip "$DWNLD_DIR/$BUNDLE_FILENAME" -d "$DWNLD_DIR/$CERT_FILENAME"
+    if [ -e "$DWNLD_DIR/$BUNDLE_FILENAME" ]
+    then
+        mkdir -p "$DWNLD_DIR/$CERT_FILENAME"
+        unzip "$DWNLD_DIR/$BUNDLE_FILENAME" -d "$DWNLD_DIR/$CERT_FILENAME"
+    fi
 
-    # From testing on Ubuntu 22.04, this process doesn't seem to work well with applications
-    # installed via snap, so the script will ignore databases within snap.
     mapfile -t databases < <(find "$ORIG_HOME" -name "$DB_FILENAME" 2>/dev/null | grep "firefox\|pki" | grep -v "snap")
     for db in "${databases[@]}"
     do
@@ -223,7 +224,7 @@ main ()
 
     # Remove artifacts
     echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Removing artifacts..."
-    rm -rf "${DWNLD_DIR:?}"/{"$BUNDLE_FILENAME","$CERT_FILENAME","$PKG_FILENAME"}
+    rm -rf "${DWNLD_DIR:?}"/{"$BUNDLE_FILENAME","$CERT_FILENAME","$PKG_FILENAME"} 2>/dev/null
     if [ "$?" -ne "$EXIT_SUCCESS" ]
     then
         echo -e "${ERR_COLOR}[ERROR]${NO_COLOR} Failed to remove artifacts"
