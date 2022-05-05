@@ -111,6 +111,7 @@ main ()
                 echo -e "${INFO_COLOR}[INFO] Installing Firefox via apt${NO_COLOR}"
                 apt install firefox
                 echo -e "${INFO_COLOR}[INFO] Completed re-installation of Firefox${NO_COLOR}"
+                snap_ff=0
             else
                 if [ $CHROME_EXISTS -eq 0 ]
                 then
