@@ -68,7 +68,8 @@ main ()
     # Browser check results
     if [ "$ff_exists" -eq 0 ] && [ "$chrome_exists" -eq 0 ]
     then
-        echo -e "${ERR_COLOR}No version of Mozilla Firefox OR Google Chrome have been detected.\nPlease install either or both to proceed.${NO_COLOR}"
+        echo -e "${ERR_COLOR}[ERROR]${NO_COLOR} No version of Mozilla Firefox OR Google Chrome has been detected."
+        echo "Please install either or both to proceed."
 
         exit "$E_BROWSER"
     elif [ "$ff_exists" -eq 1 ]
@@ -117,7 +118,10 @@ main ()
                 echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Completed re-installation of Firefox"
 
                 # Forget the old location of firefox
-                hash -d firefox
+                if hash firefox
+                then
+                    hash -d firefox
+                fi
 
                 echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Starting Firefox silently to complete post-install actions..."
                 firefox --headless --first-startup >/dev/null 2>&1 &
