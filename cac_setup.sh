@@ -14,6 +14,7 @@ main ()
     E_INSTALL=85            # Installation failed
     E_NOTROOT=86            # Non-root exit error
     E_BROWSER=87            # Compatible browser not found
+    E_NODB=88               # No database located
     ROOT_UID=0              # Only users with $UID 0 have root privileges
     DWNLD_DIR="/tmp"        # Reliable location to place artifacts
     chrome_exists=0         # Google Chrome is installed
@@ -125,21 +126,28 @@ main ()
 
                 echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Starting Firefox silently to complete post-install actions..."
                 firefox --headless --first-startup >/dev/null 2>&1 &
-                sleep 2
+                sleep 3
                 pkill -9 firefox
-                sleep 2
+                sleep 1
                 echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Finished, closing Firefox."
 
                 snap_ff=0
             else
                 if [ $chrome_exists -eq 0 ]
                 then
-                    echo -e "You have elected to keep the snap version of Firefox. You also do not currently have Google Chrome installed. Therefore, you have no compatible browsers. \n\n Exiting!\n"
+                    echo -e "You have elected to keep the snap version of Firefox. You also do not currently have Google Chrome installed. Therefore, you have no compatible browsers.\n\n Exiting...\n"
 
                     exit $E_BROWSER
                 fi
             fi
         fi
+    fi
+
+    mapfile -t databases < <(find "$ORIG_HOME" -name "$DB_FILENAME" 2>/dev/null | grep "firefox\|pki" | grep -v "Trash\|snap")
+    if [ -z "$databases" ]
+    then
+            echo -e "${ERR_COLOR}[ERROR]${NO_COLOR} No valid databases located. Exiting..."
+            exit "$E_NODB"
     fi
 
     # Install middleware and necessary utilities
@@ -185,7 +193,6 @@ main ()
         unzip "$DWNLD_DIR/$BUNDLE_FILENAME" -d "$DWNLD_DIR/$CERT_FILENAME"
     fi
 
-    mapfile -t databases < <(find "$ORIG_HOME" -name "$DB_FILENAME" 2>/dev/null | grep "firefox\|pki" | grep -v "Trash\|snap")
     for db in "${databases[@]}"
     do
         if [ -n "$db" ]
@@ -221,8 +228,6 @@ main ()
 
             echo "Done."
             echo
-        else
-            echo -e "${INFO_COLOR}[INFO]${NO_COLOR} No databases found."
         fi
     done
 
