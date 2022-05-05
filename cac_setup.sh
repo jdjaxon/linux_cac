@@ -88,8 +88,8 @@ main ()
             * set in the current variant of Firefox.          *
             ********************${INFO_COLOR}[IMPORTANT]${NO_COLOR}********************\n"
 
+            # Prompt user to elect to replace snap firefox with apt firefox
             choice=''
-
             while [ "$choice" != "y" ] && [ "$choice" != "n" ]
             do
                 echo -e "${ERR_COLOR}\nWould you like to proceed with the switch to the apt version? ${INFO_COLOR}(\"y/n\")${NO_COLOR}"
@@ -99,11 +99,18 @@ main ()
 
             if [ "$choice" == "y" ]
             then
+            # Replace snap Firefox with version from PPA maintained via Mozilla
+                echo -e "${INFO_COLOR}[INFO] Removing Snap version of Firefox${NO_COLOR}"
                 snap remove --purge firefox
+                echo -e "${INFO_COLOR}[INFO] Adding PPA for Mozilla maintained Firefox${NO_COLOR}"
                 add-apt-repository -y ppa:mozillateam/ppa
+                echo -e "${INFO_COLOR}[INFO] Setting priority to prefer Mozilla PPA over snap package${NO_COLOR}"
                 echo "Package: *\nPin: release o=LP-PPA-mozillateam\nPin-Priority: 1001" | tee /etc/apt/preferences.d/mozilla-firefox
+                echo -e "${INFO_COLOR}[INFO] Enabling updates for future firefox releases${NO_COLOR}"
                 echo 'Unattended-Upgrade::Allowed-Origins:: "LP-PPA-mozillateam:${distro_codename}";' | tee /etc/apt/apt.conf.d/51unattended-upgrades-firefox
+                echo -e "${INFO_COLOR}[INFO] Installing Firefox via apt${NO_COLOR}"
                 apt install firefox
+                echo -e "${INFO_COLOR}[INFO] Completed re-installation of Firefox${NO_COLOR}"
             else
                 if [ $CHROME_EXISTS -eq 0 ]
                 then
