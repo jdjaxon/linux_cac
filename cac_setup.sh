@@ -122,8 +122,8 @@ main ()
                 echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Starting Firefox silently to complete post-install actions..."
                 firefox --headless --first-startup >/dev/null 2>&1 &
                 sleep 2
-
                 pkill -9 firefox
+                sleep 2
                 echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Finished, closing Firefox."
 
                 snap_ff=0
@@ -181,7 +181,7 @@ main ()
         unzip "$DWNLD_DIR/$BUNDLE_FILENAME" -d "$DWNLD_DIR/$CERT_FILENAME"
     fi
 
-    mapfile -t databases < <(find "$ORIG_HOME" -name "$DB_FILENAME" 2>/dev/null | grep "firefox\|pki" | grep -v "snap")
+    mapfile -t databases < <(find "$ORIG_HOME" -name "$DB_FILENAME" 2>/dev/null | grep "firefox\|pki" | grep -v "Trash\|snap")
     for db in "${databases[@]}"
     do
         if [ -n "$db" ]
