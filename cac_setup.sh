@@ -125,7 +125,7 @@ main ()
                 fi
 
                 echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Starting Firefox silently to complete post-install actions..."
-                firefox --headless --first-startup >/dev/null 2>&1 &
+                su -p "$SUDO_USER" -c 'firefox --headless --first-startup >/dev/null 2>&1 &'
                 sleep 3
                 pkill -9 firefox
                 sleep 1
@@ -154,7 +154,7 @@ main ()
             echo -e "${ERR_COLOR}[ERROR]${NO_COLOR} No valid databases located. Reinstalling previous version of firefox..."
             apt purge firefox -y
             snap install firefox
-            echo -e "${ERR_COLOR}[ERROR]${NO_COLOR} Completed. Exiting..."
+            echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Completed. Exiting..."
             exit "$E_NODB"
         else
             # Firefox was not replaced, exit with NODB error
