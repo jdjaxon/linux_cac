@@ -277,7 +277,7 @@ main ()
         echo -e "${ERR_COLOR}[ERROR]${NO_COLOR} Failed to remove artifacts"
     else
         echo "Done."
-
+    fi
 
     exit "$EXIT_SUCCESS"
 }
