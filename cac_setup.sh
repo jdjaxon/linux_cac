@@ -125,13 +125,12 @@ main ()
                 fi
 
                 echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Starting Firefox silently to complete post-install actions..."
-                firefox --headless --first-startup >/dev/null 2>&1 &
+                su $SUDO_USER; firefox --headless --first-startup >/dev/null 2>&1 &
                 sleep 3
                 pkill -9 firefox
-                sleep 1
                 echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Finished, closing Firefox."
 
-                snap_ff=0
+                # snap_ff=0
             else
                 if [ $chrome_exists -eq 0 ]
                 then
@@ -144,10 +143,31 @@ main ()
     fi
 
     mapfile -t databases < <(find "$ORIG_HOME" -name "$DB_FILENAME" 2>/dev/null | grep "firefox\|pki" | grep -v "Trash\|snap")
+    # Check if databases were found properly
     if [ -z "$databases" ]
     then
+        # Database was not found
+        if [ "$snap_ff" == 1 ]
+        then
+            # Firefox was replaced, lets put it back where it was.
+            echo -e "${ERR_COLOR}[ERROR]${NO_COLOR} No valid databases located. Reinstalling previous version of firefox..."
+            apt purge firefox -y
+            snap install firefox -y
+            echo -e "${ERR_COLOR}[ERROR]${NO_COLOR} Completed. Exiting..."
+            exit "$E_NODB"
+        else
+            # Firefox was not replaced, exit with NODB error
             echo -e "${ERR_COLOR}[ERROR]${NO_COLOR} No valid databases located. Exiting..."
             exit "$E_NODB"
+        fi
+    else
+        # Database was found. (Good)
+        if [ "$snap_ff" == 1 ]
+        then
+        # Database was found, meaning snap firefox was replaced with apt version
+        # This conditional branch may not be needed at all... Note: Remove if not needed
+        snap_ff=0
+        fi
     fi
 
     # Install middleware and necessary utilities
