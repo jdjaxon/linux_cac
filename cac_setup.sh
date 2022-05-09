@@ -3,13 +3,24 @@
 # cac_setup.sh
 # Description: Setup a Linux environment for Common Access Card use.
 
-main ()
+print_err ()
 {
-    # For colorization
-    INFO_COLOR='\033[0;33m' # Yellow for notes
     ERR_COLOR='\033[0;31m'  # Red for error messages
     NO_COLOR='\033[0m'      # Revert terminal back to no color
 
+    echo -e "${ERR_COLOR}[ERROR]${NO_COLOR} $1"
+} # print_err
+
+print_info ()
+{
+    INFO_COLOR='\033[0;33m' # Yellow for notes
+    NO_COLOR='\033[0m'      # Revert terminal back to no color
+
+    echo -e "${INFO_COLOR}[INFO]${NO_COLOR} $1"
+} # print_info
+
+main ()
+{
     EXIT_SUCCESS=0          # Success exit code
     E_INSTALL=85            # Installation failed
     E_NOTROOT=86            # Non-root exit error
@@ -17,6 +28,7 @@ main ()
     E_NODB=88               # No database located
     ROOT_UID=0              # Only users with $UID 0 have root privileges
     DWNLD_DIR="/tmp"        # Reliable location to place artifacts
+
     chrome_exists=0         # Google Chrome is installed
     ff_exists=0             # Firefox is installed
     snap_ff=0               # Flag to prompt for how to handle snap Firefox
@@ -263,6 +275,6 @@ main ()
     fi
 
     exit "$EXIT_SUCCESS"
-}
+} # main
 
 main
