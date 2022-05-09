@@ -50,8 +50,14 @@ main ()
             snap_ff=1
             echo -e "${ERR_COLOR}\t(oh) SNAP!${NO_COLOR}"
         else
-
-        echo -e "${INFO_COLOR}\tapt (or just not snap):${NO_COLOR}"
+            echo -e "${INFO_COLOR}\tapt (or just not snap)${NO_COLOR}"
+            # Run Firefox to ensure .mozilla directory has been created
+            echo -e "${INFO_COLOR}\tRunning Firefox to ensure it has completed post-install actions...${NO_COLOR}"
+            sudo -H -u "$SUDO_USER" bash -c 'firefox --headless --first-startup >/dev/null 2>&1 &'
+            sleep 3
+            pkill -9 firefox
+            sleep 1
+            echo -e "${INFO_COLOR}\tDone.${NO_COLOR}"
         fi
     else
         echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Firefox not found."
@@ -62,6 +68,13 @@ main ()
     then
         chrome_exists=1
         echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Found Google Chrome."
+        # Run Chrome to ensure .pki directory has been created
+        echo -e "${INFO_COLOR}\tRunning Chrome to ensure it has completed post-install actions...${NO_COLOR}"
+        sudo -H -u "$SUDO_USER" bash -c 'google-chrome --headless --disable-gpu >/dev/null 2>&1 &'
+        sleep 3
+        pkill -9 google-chrome
+        sleep 1
+        echo -e "${INFO_COLOR}\tDone.${NO_COLOR}"
     else
         echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Chrome not found."
     fi
@@ -264,7 +277,7 @@ main ()
         echo -e "${ERR_COLOR}[ERROR]${NO_COLOR} Failed to remove artifacts"
     else
         echo "Done."
-    fi
+
 
     exit "$EXIT_SUCCESS"
 }
