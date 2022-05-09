@@ -153,7 +153,7 @@ main ()
             # Firefox was replaced, lets put it back where it was.
             echo -e "${ERR_COLOR}[ERROR]${NO_COLOR} No valid databases located. Reinstalling previous version of firefox..."
             apt purge firefox -y
-            snap install firefox -y
+            snap install firefox
             echo -e "${ERR_COLOR}[ERROR]${NO_COLOR} Completed. Exiting..."
             exit "$E_NODB"
         else
