@@ -214,6 +214,7 @@ main ()
         unzip "$DWNLD_DIR/$BUNDLE_FILENAME" -d "$DWNLD_DIR/$CERT_FILENAME"
     fi
 
+    # Import certificates into cert9.db databases for browsers
     for db in "${databases[@]}"
     do
         if [ -n "$db" ]
@@ -251,6 +252,9 @@ main ()
             echo
         fi
     done
+
+    echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Enabling pcscd service to start on boot..."
+    systemctl enable pcscd.socket
 
     # Remove artifacts
     echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Removing artifacts..."
