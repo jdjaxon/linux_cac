@@ -27,8 +27,8 @@
 echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Found Google Chrome."
 # Run Chrome to ensure .pki directory has been created
 echo -e "${INFO_COLOR}\tRunning Chrome to ensure it has completed post-install actions...${NO_COLOR}"
-sudo -H -u "$SUDO_USER" bash -c 'google-chrome --headless --disable-gpu >/dev/null 2>&1 &'
-sleep 3
+sudo -H -u "$SUDO_USER" bash -c 'google-chrome >/dev/null 2>&1 &'
+sleep 1
 pkill -9 google-chrome
 sleep 1
 echo -e "${INFO_COLOR}\tDone.${NO_COLOR}"
