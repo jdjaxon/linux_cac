@@ -125,7 +125,7 @@ main ()
                 fi
 
                 echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Starting Firefox silently to complete post-install actions..."
-                su -p "$SUDO_USER" -c 'firefox --headless --first-startup >/dev/null 2>&1 &'
+                sudo -H -u "$SUDO_USER" bash -c 'firefox --headless --first-startup >/dev/null 2>&1 &'
                 sleep 3
                 pkill -9 firefox
                 sleep 1
