@@ -9,7 +9,7 @@ main ()
     E_INSTALL=85            # Installation failed
     E_NOTROOT=86            # Non-root exit error
     E_BROWSER=87            # Compatible browser not found
-    E_DB=88               # No database located
+    E_DB=88                 # No database located
     DWNLD_DIR="/tmp"        # Reliable location to place artifacts
 
     chrome_exists=0         # Google Chrome is installed
@@ -197,37 +197,7 @@ main ()
     do
         if [ -n "$db" ]
         then
-            db_root="$(dirname "$db")"
-            if [ -n "$db_root" ]
-            then
-                case "$db_root" in
-                    *"pki"*)
-                        print_info "Importing certificates for Chrome..."
-                        echo
-                        ;;
-                    *"firefox"*)
-                        print_info "Importing certificates for Firefox..."
-                        echo
-                        ;;
-                esac
-
-                print_info "Loading certificates into $db_root "
-                echo
-
-                for cert in "$DWNLD_DIR/$CERT_FILENAME/"*."$CERT_EXTENSION"
-                do
-                    echo "Importing $cert"
-                    certutil -d sql:"$db_root" -A -t TC -n "$cert" -i "$cert"
-                done
-
-                if ! grep -Pzo 'library=/usr/lib64/libcackey.so\nname=CAC Module\n' "$db_root/$PKCS_FILENAME" >/dev/null
-                then
-                    printf "library=/usr/lib64/libcackey.so\nname=CAC Module\n" >> "$db_root/$PKCS_FILENAME"
-                fi
-            fi
-
-            echo "Done."
-            echo
+            import_certs "$db"
         fi
     done
 
@@ -310,5 +280,42 @@ reconfigure_firefox ()
     print_info "Finished, closing Firefox."
     #snap_ff=0
 } # reconfigure_firefox
+
+
+ import_certs ()
+{
+    db=$1
+    db_root="$(dirname "$db")"
+    if [ -n "$db_root" ]
+    then
+        case "$db_root" in
+            *"pki"*)
+                print_info "Importing certificates for Chrome..."
+                echo
+                ;;
+            *"firefox"*)
+                print_info "Importing certificates for Firefox..."
+                echo
+                ;;
+        esac
+
+        print_info "Loading certificates into $db_root "
+        echo
+
+        for cert in "$DWNLD_DIR/$CERT_FILENAME/"*."$CERT_EXTENSION"
+        do
+            echo "Importing $cert"
+            certutil -d sql:"$db_root" -A -t TC -n "$cert" -i "$cert"
+        done
+
+        if ! grep -Pzo 'library=/usr/lib64/libcackey.so\nname=CAC Module\n' "$db_root/$PKCS_FILENAME" >/dev/null
+        then
+            printf "library=/usr/lib64/libcackey.so\nname=CAC Module\n" >> "$db_root/$PKCS_FILENAME"
+        fi
+    fi
+
+    echo "Done."
+    echo
+} # import_certs
 
 main
