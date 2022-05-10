@@ -159,11 +159,11 @@ reconfigure_firefox ()
     add-apt-repository -y ppa:mozillateam/ppa
 
     print_info "Setting priority to prefer Mozilla PPA over snap package"
-    echo -e "Package: *\nPin: release o=LP-PPA-mozillateam\nPin-Priority: 1001" | tee /etc/apt/preferences.d/mozilla-firefox
+    echo -e "Package: *\nPin: release o=LP-PPA-mozillateam\nPin-Priority: 1001" > /etc/apt/preferences.d/mozilla-firefox
 
     print_info "Enabling updates for future firefox releases"
     # shellcheck disable=SC2016
-    echo -e 'Unattended-Upgrade::Allowed-Origins:: "LP-PPA-mozillateam:${distro_codename}";' | tee /etc/apt/apt.conf.d/51unattended-upgrades-firefox
+    echo -e 'Unattended-Upgrade::Allowed-Origins:: "LP-PPA-mozillateam:${distro_codename}";' > /etc/apt/apt.conf.d/51unattended-upgrades-firefox
 
     print_info "Installing Firefox via apt"
     apt install firefox -y
