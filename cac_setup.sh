@@ -3,30 +3,13 @@
 # cac_setup.sh
 # Description: Setup a Linux environment for Common Access Card use.
 
-print_err ()
-{
-    ERR_COLOR='\033[0;31m'  # Red for error messages
-    NO_COLOR='\033[0m'      # Revert terminal back to no color
-
-    echo -e "${ERR_COLOR}[ERROR]${NO_COLOR} $1"
-} # print_err
-
-print_info ()
-{
-    INFO_COLOR='\033[0;33m' # Yellow for notes
-    NO_COLOR='\033[0m'      # Revert terminal back to no color
-
-    echo -e "${INFO_COLOR}[INFO]${NO_COLOR} $1"
-} # print_info
-
 main ()
 {
     EXIT_SUCCESS=0          # Success exit code
     E_INSTALL=85            # Installation failed
     E_NOTROOT=86            # Non-root exit error
     E_BROWSER=87            # Compatible browser not found
-    E_NODB=88               # No database located
-    ROOT_UID=0              # Only users with $UID 0 have root privileges
+    E_DB=88               # No database located
     DWNLD_DIR="/tmp"        # Reliable location to place artifacts
 
     chrome_exists=0         # Google Chrome is installed
@@ -43,12 +26,7 @@ main ()
     PKG_FILENAME="cackey_0.7.5-1_amd64.deb"
     CACKEY_URL="http://cackey.rkeene.org/download/0.7.5/$PKG_FILENAME"
 
-    # Ensure the script is ran as root
-    if [ "${EUID:-$(id -u)}" -ne "$ROOT_UID" ]
-    then
-        print_err "Please run this script as root."
-        exit "$E_NOTROOT"
-    fi
+    root_check
 
     # Check to see if firefox exists
     print_info "Checking for Firefox and Chrome..."
@@ -60,16 +38,16 @@ main ()
         if command -v firefox | grep snap >/dev/null
         then
             snap_ff=1
-            echo -e "${ERR_COLOR}\t(oh) SNAP!${NO_COLOR}"
+            print_err "\t(oh) SNAP!"
         else
-            echo -e "${INFO_COLOR}\tapt (or just not snap)${NO_COLOR}"
+            echo -e "\tapt (or just not snap)"
             # Run Firefox to ensure .mozilla directory has been created
-            echo -e "${INFO_COLOR}\tRunning Firefox to ensure it has completed post-install actions...${NO_COLOR}"
+            echo -e "\tRunning Firefox to ensure it has completed post-install actions..."
             sudo -H -u "$SUDO_USER" bash -c 'firefox --headless --first-startup >/dev/null 2>&1 &'
             sleep 3
             pkill -9 firefox
             sleep 1
-            echo -e "${INFO_COLOR}\tDone.${NO_COLOR}"
+            echo -e "\tDone."
         fi
     else
         print_info "Firefox not found."
@@ -79,15 +57,15 @@ main ()
     if command -v google-chrome >/dev/null
     then
         chrome_exists=1
-        echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Found Google Chrome."
+        print_info "Found Google Chrome."
         # Run Chrome to ensure .pki directory has been created
-        echo -e "${INFO_COLOR}\tRunning Chrome to ensure it has completed post-install actions...${NO_COLOR}"
+        echo -e "\tRunning Chrome to ensure it has completed post-install actions..."
         # TODO: finish troubleshooting this
         sudo -H -u "$SUDO_USER" bash -c 'google-chrome --headless --disable-gpu >/dev/null 2>&1 &'
         sleep 3
         pkill -9 google-chrome
         sleep 1
-        echo -e "${INFO_COLOR}\tDone.${NO_COLOR}"
+        echo -e "\tDone."
     else
         print_info "Chrome not found."
     fi
@@ -116,52 +94,26 @@ main ()
             *                                                 *
             * If you are not signed in to Firefox, you will   *
             * likely lose bookmarks or other personalizations *
-            * set in the current variant of Firefox.          *
+            * set in the current snap version of Firefox.     *
             ********************${INFO_COLOR}[IMPORTANT]${NO_COLOR}********************\n"
 
             # Prompt user to elect to replace snap firefox with apt firefox
             choice=''
             while [ "$choice" != "y" ] && [ "$choice" != "n" ]
             do
-                echo -e "${ERR_COLOR}\nWould you like to proceed with the switch to the apt version? ${INFO_COLOR}(\"y/n\")${NO_COLOR}"
-
+                echo -e "\nWould you like to switch to the apt version of firefox? ${INFO_COLOR}(\"y/n\")${NO_COLOR}"
                 read -rp '> ' choice
             done
 
             if [ "$choice" == "y" ]
             then
-            # Replace snap Firefox with version from PPA maintained via Mozilla
-                print_info "Removing Snap version of Firefox"
-                snap remove --purge firefox
-                print_info "Adding PPA for Mozilla maintained Firefox"
-                add-apt-repository -y ppa:mozillateam/ppa
-                print_info "Setting priority to prefer Mozilla PPA over snap package"
-                echo -e "Package: *\nPin: release o=LP-PPA-mozillateam\nPin-Priority: 1001" | tee /etc/apt/preferences.d/mozilla-firefox
-                print_info "Enabling updates for future firefox releases"
-                # shellcheck disable=SC2016
-                echo -e 'Unattended-Upgrade::Allowed-Origins:: "LP-PPA-mozillateam:${distro_codename}";' | tee /etc/apt/apt.conf.d/51unattended-upgrades-firefox
-                print_info "Installing Firefox via apt"
-                apt install firefox -y
-                print_info "Completed re-installation of Firefox"
-
-                # Forget the old location of firefox
-                if hash firefox
-                then
-                    hash -d firefox
-                fi
-
-                print_info "Starting Firefox silently to complete post-install actions..."
-                sudo -H -u "$SUDO_USER" bash -c 'firefox --headless --first-startup >/dev/null 2>&1 &'
-                sleep 3
-                pkill -9 firefox
-                sleep 1
-                print_info "Finished, closing Firefox."
-
-                # snap_ff=0
+                reconfigure_firefox
             else
                 if [ $chrome_exists -eq 0 ]
                 then
-                    echo -e "You have elected to keep the snap version of Firefox. You also do not currently have Google Chrome installed. Therefore, you have no compatible browsers.\n\n Exiting...\n"
+                    echo -e "You have elected to keep the snap version of Firefox."
+                    print_err "You have no compatible browsers.\n\n"
+                    echo -e "Exiting...\n"
 
                     exit $E_BROWSER
                 fi
@@ -181,19 +133,19 @@ main ()
             apt purge firefox -y
             snap install firefox
             print_info "Completed. Exiting..."
-            exit "$E_NODB"
+            exit "$E_DB"
         else
             # Firefox was not replaced, exit with NODB error
             print_err "No valid databases located. Exiting..."
-            exit "$E_NODB"
+            exit "$E_DB"
         fi
     else
         # Database was found. (Good)
         if [ "$snap_ff" == 1 ]
         then
-        # Database was found, meaning snap firefox was replaced with apt version
-        # This conditional branch may not be needed at all... Note: Remove if not needed
-        snap_ff=0
+            # Database was found, meaning snap firefox was replaced with apt version
+            # This conditional branch may not be needed at all... Note: Remove if not needed
+            snap_ff=0
         fi
     fi
 
@@ -279,7 +231,7 @@ main ()
         fi
     done
 
-    echo -e "${INFO_COLOR}[INFO]${NO_COLOR} Enabling pcscd service to start on boot..."
+    print_info "Enabling pcscd service to start on boot..."
     systemctl enable pcscd.socket
 
     # Remove artifacts
@@ -294,5 +246,69 @@ main ()
 
     exit "$EXIT_SUCCESS"
 } # main
+
+print_err ()
+{
+    ERR_COLOR='\033[0;31m'  # Red for error messages
+    NO_COLOR='\033[0m'      # Revert terminal back to no color
+
+    echo -e "${ERR_COLOR}[ERROR]${NO_COLOR} $1"
+} # print_err
+
+print_info ()
+{
+    INFO_COLOR='\033[0;33m' # Yellow for notes
+    NO_COLOR='\033[0m'      # Revert terminal back to no color
+
+    echo -e "${INFO_COLOR}[INFO]${NO_COLOR} $1"
+} # print_info
+
+root_check ()
+{
+    local ROOT_UID=0              # Only users with $UID 0 have root privileges
+
+    # Ensure the script is ran as root
+    if [ "${EUID:-$(id -u)}" -ne "$ROOT_UID" ]
+    then
+        print_err "Please run this script as root."
+        exit "$E_NOTROOT"
+    fi
+} # root_check
+
+reconfigure_firefox ()
+{
+    # Replace snap Firefox with version from PPA maintained via Mozilla
+    print_info "Removing Snap version of Firefox"
+    snap remove --purge firefox
+
+    print_info "Adding PPA for Mozilla maintained Firefox"
+    add-apt-repository -y ppa:mozillateam/ppa
+
+    print_info "Setting priority to prefer Mozilla PPA over snap package"
+    echo -e "Package: *\nPin: release o=LP-PPA-mozillateam\nPin-Priority: 1001" | tee /etc/apt/preferences.d/mozilla-firefox
+
+    print_info "Enabling updates for future firefox releases"
+    # shellcheck disable=SC2016
+    echo -e 'Unattended-Upgrade::Allowed-Origins:: "LP-PPA-mozillateam:${distro_codename}";' | tee /etc/apt/apt.conf.d/51unattended-upgrades-firefox
+
+    print_info "Installing Firefox via apt"
+    apt install firefox -y
+    print_info "Completed re-installation of Firefox"
+
+    # Forget the previous location of firefox executable
+    if hash firefox
+    then
+        hash -d firefox
+    fi
+
+    print_info "Starting Firefox silently to complete post-install actions..."
+    sudo -H -u "$SUDO_USER" bash -c 'firefox --headless --first-startup >/dev/null 2>&1 &'
+    sleep 3
+    pkill -9 firefox
+    sleep 1
+
+    print_info "Finished, closing Firefox."
+    #snap_ff=0
+} # reconfigure_firefox
 
 main
