@@ -27,7 +27,6 @@ main ()
     CACKEY_URL="http://cackey.rkeene.org/download/0.7.5/$PKG_FILENAME"
 
     root_check
-
     browser_check
 
     mapfile -t databases < <(find "$ORIG_HOME" -name "$DB_FILENAME" 2>/dev/null | grep "firefox\|pki" | grep -v "Trash\|snap")
@@ -41,6 +40,7 @@ main ()
         else
             # Firefox was not replaced, exit with NODB error
             print_err "No valid databases located. Exiting..."
+
             exit "$E_DB"
         fi
     else
@@ -57,13 +57,13 @@ main ()
     print_info "Installing middleware..."
     apt update
     DEBIAN_FRONTEND=noninteractive apt install -y libpcsclite1 pcscd libccid libpcsc-perl pcsc-tools libnss3-tools unzip wget
-    echo "Done"
+    print_info "Done"
 
     # Pull all necessary files
     print_info "Downloading DoD certificates and Cackey package..."
     wget -qP "$DWNLD_DIR" "$CERT_URL"
     wget -qP "$DWNLD_DIR" "$CACKEY_URL"
-    echo "Done."
+    print_info "Done."
 
     # Install libcackey.
     if [ -e "$DWNLD_DIR/$PKG_FILENAME" ]
@@ -71,9 +71,10 @@ main ()
         print_info "Installing libcackey..."
         if dpkg -i "$DWNLD_DIR/$PKG_FILENAME"
         then
-            echo "Done."
+            print_info "Done."
         else
             print_err "Installation failed. Exiting..."
+
             exit "$E_INSTALL"
         fi
     fi
@@ -115,7 +116,7 @@ main ()
     then
         print_err "Failed to remove artifacts"
     else
-        echo "Done."
+        print_info "Done."
     fi
 
     exit "$EXIT_SUCCESS"
@@ -195,7 +196,7 @@ browser_check ()
     if [ "$ff_exists" -eq 0 ] && [ "$chrome_exists" -eq 0 ]
     then
         print_err "No version of Mozilla Firefox OR Google Chrome has been detected."
-        echo "Please install either or both to proceed."
+        print_info "Please install either or both to proceed."
 
         exit "$E_BROWSER"
 
@@ -233,9 +234,8 @@ browser_check ()
             else
                 if [ $chrome_exists -eq 0 ]
                 then
-                    echo -e "You have elected to keep the snap version of Firefox.\n"
-                    print_err "You have no compatible browsers.\n\n"
-                    echo -e "Exiting...\n"
+                    print_info "You have elected to keep the snap version of Firefox.\n"
+                    print_err "You have no compatible browsers. Exiting..."
 
                     exit $E_BROWSER
                 fi
@@ -295,6 +295,7 @@ revert_firefox ()
     apt purge firefox -y
     snap install firefox
     print_info "Completed. Exiting..."
+
     exit "$E_DB"
 }
 
