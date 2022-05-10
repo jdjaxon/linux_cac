@@ -62,8 +62,7 @@ main ()
             snap_ff=1
             echo -e "${ERR_COLOR}\t(oh) SNAP!${NO_COLOR}"
         else
-
-        echo -e "${INFO_COLOR}\tapt (or just not snap):${NO_COLOR}"
+            echo -e "${INFO_COLOR}\tapt (or just not snap):${NO_COLOR}"
         fi
     else
         print_info "Firefox not found."
