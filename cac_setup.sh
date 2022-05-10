@@ -28,98 +28,7 @@ main ()
 
     root_check
 
-    # Check to see if firefox exists
-    print_info "Checking for Firefox and Chrome..."
-    if command -v firefox >/dev/null
-    then
-        ff_exists=1
-        print_info "Found Firefox."
-        print_info "Installation method:"
-        if command -v firefox | grep snap >/dev/null
-        then
-            snap_ff=1
-            print_err "\t(oh) SNAP!"
-        else
-            echo -e "\tapt (or just not snap)"
-            # Run Firefox to ensure .mozilla directory has been created
-            echo -e "\tRunning Firefox to ensure it has completed post-install actions..."
-            sudo -H -u "$SUDO_USER" bash -c 'firefox --headless --first-startup >/dev/null 2>&1 &'
-            sleep 3
-            pkill -9 firefox
-            sleep 1
-            echo -e "\tDone."
-        fi
-    else
-        print_info "Firefox not found."
-    fi
-
-    # Check to see if Chrome exists
-    if command -v google-chrome >/dev/null
-    then
-        chrome_exists=1
-        print_info "Found Google Chrome."
-        # Run Chrome to ensure .pki directory has been created
-        echo -e "\tRunning Chrome to ensure it has completed post-install actions..."
-        # TODO: finish troubleshooting this
-        sudo -H -u "$SUDO_USER" bash -c 'google-chrome --headless --disable-gpu >/dev/null 2>&1 &'
-        sleep 3
-        pkill -9 google-chrome
-        sleep 1
-        echo -e "\tDone."
-    else
-        print_info "Chrome not found."
-    fi
-
-    # Browser check results
-    if [ "$ff_exists" -eq 0 ] && [ "$chrome_exists" -eq 0 ]
-    then
-        print_err "No version of Mozilla Firefox OR Google Chrome has been detected."
-        echo "Please install either or both to proceed."
-
-        exit "$E_BROWSER"
-    elif [ "$ff_exists" -eq 1 ]
-    then
-        if [ "$snap_ff" -eq 1 ]
-        then
-            echo -e "
-            ********************${INFO_COLOR}[IMPORTANT]${NO_COLOR}********************
-            * The version of Firefox you have installed       *
-            * currently was installed via snap.               *
-            * This version of Firefox is not currently        *
-            * compatible with the method used to enable CAC   *
-            * support in browsers.                            *
-            *                                                 *
-            * As a work-around, this script can automatically *
-            * remove the snap version and reinstall via apt.  *
-            *                                                 *
-            * If you are not signed in to Firefox, you will   *
-            * likely lose bookmarks or other personalizations *
-            * set in the current snap version of Firefox.     *
-            ********************${INFO_COLOR}[IMPORTANT]${NO_COLOR}********************\n"
-
-            # Prompt user to elect to replace snap firefox with apt firefox
-            choice=''
-            while [ "$choice" != "y" ] && [ "$choice" != "n" ]
-            do
-                echo -e "\nWould you like to switch to the apt version of firefox? ${INFO_COLOR}(\"y/n\")${NO_COLOR}"
-                read -rp '> ' choice
-            done
-
-            if [ "$choice" == "y" ]
-            then
-                reconfigure_firefox
-            else
-                if [ $chrome_exists -eq 0 ]
-                then
-                    echo -e "You have elected to keep the snap version of Firefox."
-                    print_err "You have no compatible browsers.\n\n"
-                    echo -e "Exiting...\n"
-
-                    exit $E_BROWSER
-                fi
-            fi
-        fi
-    fi
+    browser_check
 
     mapfile -t databases < <(find "$ORIG_HOME" -name "$DB_FILENAME" 2>/dev/null | grep "firefox\|pki" | grep -v "Trash\|snap")
     # Check if databases were found properly
@@ -128,12 +37,7 @@ main ()
         # Database was not found
         if [ "$snap_ff" == 1 ]
         then
-            # Firefox was replaced, lets put it back where it was.
-            print_err "No valid databases located. Reinstalling previous version of firefox..."
-            apt purge firefox -y
-            snap install firefox
-            print_info "Completed. Exiting..."
-            exit "$E_DB"
+            revert_firefox
         else
             # Firefox was not replaced, exit with NODB error
             print_err "No valid databases located. Exiting..."
@@ -281,6 +185,118 @@ reconfigure_firefox ()
     #snap_ff=0
 } # reconfigure_firefox
 
+browser_check ()
+{
+    print_info "Checking for Firefox and Chrome..."
+    check_for_firefox
+    check_for_chrome
+
+    # Browser check results
+    if [ "$ff_exists" -eq 0 ] && [ "$chrome_exists" -eq 0 ]
+    then
+        print_err "No version of Mozilla Firefox OR Google Chrome has been detected."
+        echo "Please install either or both to proceed."
+
+        exit "$E_BROWSER"
+
+    elif [ "$ff_exists" -eq 1 ]
+    then
+        if [ "$snap_ff" -eq 1 ]
+        then
+            echo -e "
+            ********************${INFO_COLOR}[IMPORTANT]${NO_COLOR}********************
+            * The version of Firefox you have installed       *
+            * currently was installed via snap.               *
+            * This version of Firefox is not currently        *
+            * compatible with the method used to enable CAC   *
+            * support in browsers.                            *
+            *                                                 *
+            * As a work-around, this script can automatically *
+            * remove the snap version and reinstall via apt.  *
+            *                                                 *
+            * If you are not signed in to Firefox, you will   *
+            * likely lose bookmarks or other personalizations *
+            * set in the current snap version of Firefox.     *
+            ********************${INFO_COLOR}[IMPORTANT]${NO_COLOR}********************\n"
+
+            # Prompt user to elect to replace snap firefox with apt firefox
+            choice=''
+            while [ "$choice" != "y" ] && [ "$choice" != "n" ]
+            do
+                echo -e "\nWould you like to switch to the apt version of firefox? ${INFO_COLOR}(\"y/n\")${NO_COLOR}"
+                read -rp '> ' choice
+            done
+
+            if [ "$choice" == "y" ]
+            then
+                reconfigure_firefox
+            else
+                if [ $chrome_exists -eq 0 ]
+                then
+                    echo -e "You have elected to keep the snap version of Firefox.\n"
+                    print_err "You have no compatible browsers.\n\n"
+                    echo -e "Exiting...\n"
+
+                    exit $E_BROWSER
+                fi
+            fi
+        fi
+    fi
+}
+
+check_for_firefox ()
+{
+    if command -v firefox >/dev/null
+        then
+            ff_exists=1
+            print_info "Found Firefox."
+            if command -v firefox | grep snap >/dev/null
+            then
+                snap_ff=1
+                print_err "This version of Firefox was installed as a snap package"
+            else
+                # Run Firefox to ensure .mozilla directory has been created
+                echo -e "Running Firefox to generate profile directory..."
+                sudo -H -u "$SUDO_USER" bash -c 'firefox --headless --first-startup >/dev/null 2>&1 &'
+                sleep 3
+                pkill -9 firefox
+                sleep 1
+                echo -e "\tDone."
+            fi
+        else
+            print_info "Firefox not found."
+        fi
+}
+
+check_for_chrome ()
+{
+    # Check to see if Chrome exists
+    if command -v google-chrome >/dev/null
+    then
+        chrome_exists=1
+        print_info "Found Google Chrome."
+        # Run Chrome to ensure .pki directory has been created
+        echo -e "\tRunning Chrome to ensure it has completed post-install actions..."
+        # TODO: finish troubleshooting this
+        sudo -H -u "$SUDO_USER" bash -c 'google-chrome --headless --disable-gpu >/dev/null 2>&1 &'
+        sleep 3
+        pkill -9 google-chrome
+        sleep 1
+        echo -e "\tDone."
+    else
+        print_info "Chrome not found."
+    fi
+}
+
+revert_firefox ()
+{
+    # Firefox was replaced, lets put it back where it was.
+    print_err "No valid databases located. Reinstalling previous version of firefox..."
+    apt purge firefox -y
+    snap install firefox
+    print_info "Completed. Exiting..."
+    exit "$E_DB"
+}
 
  import_certs ()
 {
