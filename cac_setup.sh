@@ -153,6 +153,9 @@ root_check ()
 reconfigure_firefox ()
 {
     # Replace snap Firefox with version from PPA maintained via Mozilla
+    print_info "Backing up Firefox profile"
+    backup_ff_profile
+
     print_info "Removing Snap version of Firefox"
     snap remove --purge firefox
 
@@ -169,6 +172,10 @@ reconfigure_firefox ()
     print_info "Installing Firefox via apt"
     apt install firefox -y
     print_info "Completed re-installation of Firefox"
+    
+    print_info "Migrating user profile into newly installed Firefox"
+    
+    migrate_ff_profile
 
     # Forget the previous location of firefox executable
     if hash firefox
@@ -200,9 +207,9 @@ browser_check ()
 
         exit "$E_BROWSER"
 
-    elif [ "$ff_exists" -eq 1 ]
+    elif [ "$ff_exists" -eq 1 ] # Firefox was found
     then
-        if [ "$snap_ff" -eq 1 ]
+        if [ "$snap_ff" -eq 1 ] # Snap version of Firefox
         then
             echo -e "
             ********************${INFO_COLOR}[IMPORTANT]${NO_COLOR}********************
@@ -242,6 +249,36 @@ browser_check ()
             fi
         fi
     fi
+}
+
+backup_ff_profile ()
+{
+    location="$(find "$ORIG_HOME" -name "$DB_FILENAME" 2>/dev/null | grep "firefox" | grep -v "Trash" | grep snap)"
+    if [ -z "$location" ]
+    then
+        print_err "No user profile was found in snap-installed version of Firefox."
+        exit $E_DB
+    else
+        # Find current snap FF profile
+        ff_profile="$(dirname "$location")"
+        mv "$ff_profile" "/tmp/ff_old_profile"
+
+    fi
+}
+
+migrate_ff_profile ()
+{
+    apt_ff_profile="$(find "$ORIG_HOME" -name "$DB_FILENAME" 2>/dev/null | grep "firefox" | grep -v "Trash" | grep -v snap)"
+    if [ -z "$apt_ff_profile" ]
+    then
+        print_err "Something went wrong while trying to find apt Firefox's user profile directory."
+        exit "$E_DB"
+    else
+        ff_profile_dir="$(dirname "$apt_ff_profile")"
+        mv -f /tmp/ff_profile/* "$ff_profile_dir"
+        print_info "Successfully migrated user profile for Firefox versions"
+    fi
+
 }
 
 check_for_firefox ()
