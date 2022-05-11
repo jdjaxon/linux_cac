@@ -197,9 +197,9 @@ printf "library=/usr/lib64/libcackey.so\nname=CAC Module" >> "$(dirname "$(find 
 
 - Ubuntu 21.10 and greater (to include the latest LTS 22.04) have Firefox
   installed via snap by default. There is an outstanding bug
-  (https://bugzilla.mozilla.org/show_bug.cgi?id=1734371) that prevents Firefox
-  from being able to read the certificates. One solution could be to uninstall
-  Firefox from snap and reinstall it via `apt`.
+  (https://bugzilla.mozilla.org/show_bug.cgi?id=1734371) that prevents the snap
+  version of Firefox from being able to read the certificates. One solution
+  could be to uninstall Firefox from snap and reinstall it via `apt`.
 
 - If you upgraded from 20.04 to 22.04 on either PopOS or Ubuntu, this likely
   also upgraded the cackey package from 7.5 to the latest version, which
