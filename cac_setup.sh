@@ -172,10 +172,6 @@ reconfigure_firefox ()
     print_info "Installing Firefox via apt"
     apt install firefox -y
     print_info "Completed re-installation of Firefox"
-    
-    print_info "Migrating user profile into newly installed Firefox"
-    
-    migrate_ff_profile
 
     # Forget the previous location of firefox executable
     if hash firefox
@@ -190,7 +186,11 @@ reconfigure_firefox ()
     sleep 1
 
     print_info "Finished, closing Firefox."
-    #snap_ff=0
+
+    print_info "Migrating user profile into newly installed Firefox"
+
+    migrate_ff_profile
+
 } # reconfigure_firefox
 
 browser_check ()
