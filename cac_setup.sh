@@ -276,13 +276,13 @@ check_for_chrome ()
         chrome_exists=1
         print_info "Found Google Chrome."
         # Run Chrome to ensure .pki directory has been created
-        echo -e "\tRunning Chrome to ensure it has completed post-install actions..."
-        # TODO: finish troubleshooting this
-        sudo -H -u "$SUDO_USER" bash -c 'google-chrome --headless --disable-gpu >/dev/null 2>&1 &'
-        sleep 3
-        pkill -9 google-chrome
-        sleep 1
-        echo -e "\tDone."
+#        echo -e "\tRunning Chrome to ensure it has completed post-install actions..."
+#        # TODO: finish troubleshooting this
+#        sudo -H -u "$SUDO_USER" bash -c 'google-chrome --headless --disable-gpu >/dev/null 2>&1 &'
+#        sleep 3
+#        pkill -9 google-chrome
+#        sleep 1
+#        echo -e "\tDone."
     else
         print_info "Chrome not found."
     fi
