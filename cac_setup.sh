@@ -259,7 +259,7 @@ backup_ff_profile ()
     location="$(find "$ORIG_HOME" -name "$DB_FILENAME" 2>/dev/null | grep "firefox" | grep -v "Trash" | grep snap)"
     if [ -z "$location" ]
     then
-        print_err "No user profile was found in snap-installed version of Firefox."
+        print_info "No user profile was found in snap-installed version of Firefox."
     else
         # A user profile exists in the snap version of FF
         choice=''
