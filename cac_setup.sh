@@ -260,7 +260,6 @@ backup_ff_profile ()
     if [ -z "$location" ]
     then
         print_err "No user profile was found in snap-installed version of Firefox."
-        exit $E_DB
     else
         # A user profile exists in the snap version of FF
         choice=''
