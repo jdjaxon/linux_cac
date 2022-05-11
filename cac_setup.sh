@@ -153,7 +153,8 @@ root_check ()
 reconfigure_firefox ()
 {
     # Replace snap Firefox with version from PPA maintained via Mozilla
-    print_info "Backing up Firefox profile"
+
+    #Profile migration
     backup_ff_profile
 
     print_info "Removing Snap version of Firefox"
@@ -187,9 +188,11 @@ reconfigure_firefox ()
 
     print_info "Finished, closing Firefox."
 
-    print_info "Migrating user profile into newly installed Firefox"
-
-    migrate_ff_profile
+    if [ "$backup_exists" == 1 ]
+    then
+        print_info "Migrating user profile into newly installed Firefox"
+        migrate_ff_profile
+    fi
 
 } # reconfigure_firefox
 
@@ -212,7 +215,7 @@ browser_check ()
         if [ "$snap_ff" -eq 1 ] # Snap version of Firefox
         then
             echo -e "
-            ********************${INFO_COLOR}[IMPORTANT]${NO_COLOR}********************
+            ********************${ERR_COLOR}[ WARNING ]${NO_COLOR}********************
             * The version of Firefox you have installed       *
             * currently was installed via snap.               *
             * This version of Firefox is not currently        *
@@ -225,7 +228,7 @@ browser_check ()
             * If you are not signed in to Firefox, you will   *
             * likely lose bookmarks or other personalizations *
             * set in the current snap version of Firefox.     *
-            ********************${INFO_COLOR}[IMPORTANT]${NO_COLOR}********************\n"
+            ********************${ERR_COLOR}[ WARNING ]${NO_COLOR}********************\n"
 
             # Prompt user to elect to replace snap firefox with apt firefox
             choice=''
@@ -256,15 +259,27 @@ backup_ff_profile ()
     location="$(find "$ORIG_HOME" -name "$DB_FILENAME" 2>/dev/null | grep "firefox" | grep -v "Trash" | grep snap)"
     if [ -z "$location" ]
     then
-        print_err "No user profile was found in snap-installed version of Firefox."
-        exit $E_DB
+        print_info "No user profile was found in snap-installed version of Firefox."
     else
-        # Find current snap FF profile
-        ff_profile="$(dirname "$location")"
-        mv "$ff_profile" "/tmp/ff_old_profile"
+        # A user profile exists in the snap version of FF
+        choice=''
+        while [ "$choice" != "y" ] && [ "$choice" != "n" ]
+        do
+            echo -e "\nWould you like to transfer your bookmarks and personalizations to the new version of Firefox? ${INFO_COLOR}(\"y/n\")${NO_COLOR}"
+            read -rp '> ' choice
+        done
+
+        if [ "$choice" == "y" ]
+        then
+            print_info "Backing up Firefox profile"
+            ff_profile="$(dirname "$location")"
+            mv "$ff_profile" "/tmp/ff_old_profile"
+
+            backup_exists=1
+        fi
 
     fi
-}
+} # backup_ff_profile
 
 migrate_ff_profile ()
 {
