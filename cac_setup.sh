@@ -256,6 +256,7 @@ browser_check ()
 
 backup_ff_profile ()
 {
+    # TODO: Save off the filepath so it can be used when putting the backed up files in place
     location="$(find "$ORIG_HOME" -name "$DB_FILENAME" 2>/dev/null | grep "firefox" | grep -v "Trash" | grep snap)"
     if [ -z "$location" ]
     then
