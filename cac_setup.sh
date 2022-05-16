@@ -274,7 +274,8 @@ backup_ff_profile ()
         then
             print_info "Backing up Firefox profile"
             ff_profile="$(dirname "$location")"
-            mv "$ff_profile" "/tmp/ff_old_profile"
+            mkdir /tmp/ff_old_profile
+            cp -rf "$ff_profile/*" "/tmp/ff_old_profile/"
 
             backup_exists=1
         fi
@@ -291,7 +292,7 @@ migrate_ff_profile ()
         exit "$E_DB"
     else
         ff_profile_dir="$(dirname "$apt_ff_profile")"
-        mv -f /tmp/ff_profile/* "$ff_profile_dir"
+        cp -rf /tmp/ff_profile/* "$ff_profile_dir"
         print_info "Successfully migrated user profile for Firefox versions"
     fi
 
