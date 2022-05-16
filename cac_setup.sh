@@ -291,7 +291,7 @@ migrate_ff_profile ()
         exit "$E_DB"
     else
         ff_profile_dir="$(dirname "$apt_ff_profile")"
-        cp -rf /tmp/ff_profile/* "$ff_profile_dir"
+        cp -rf /tmp/ff_profile "$ff_profile_dir"
         print_info "Successfully migrated user profile for Firefox versions"
     fi
 
