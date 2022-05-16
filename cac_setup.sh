@@ -274,8 +274,7 @@ backup_ff_profile ()
         then
             print_info "Backing up Firefox profile"
             ff_profile="$(dirname "$location")"
-            mkdir /tmp/ff_old_profile
-            cp -rf "$ff_profile/*" "/tmp/ff_old_profile/"
+            cp -rf "$ff_profile" "/tmp/ff_old_profile"
 
             backup_exists=1
         fi
