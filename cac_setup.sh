@@ -111,7 +111,7 @@ main ()
 
     # Remove artifacts
     print_info "Removing artifacts..."
-    rm -rf "${DWNLD_DIR:?}"/{"$BUNDLE_FILENAME","$CERT_FILENAME","$PKG_FILENAME"} 2>/dev/null
+    rm -rf "${DWNLD_DIR:?}"/{"$BUNDLE_FILENAME","$CERT_FILENAME","$PKG_FILENAME"} 2>/dev/null && rm -rf /tmp/ff_old/profile 2>/dev/null
     if [ "$?" -ne "$EXIT_SUCCESS" ]
     then
         print_err "Failed to remove artifacts"
@@ -291,7 +291,7 @@ migrate_ff_profile ()
         exit "$E_DB"
     else
         ff_profile_dir="$(dirname "$apt_ff_profile")"
-        sudo -H -u "$SUDO_USER" cp -rfv /tmp/ff_old_profile/* "$ff_profile_dir"
+        sudo -H -u "$SUDO_USER" cp -rf /tmp/ff_old_profile/* "$ff_profile_dir"
         print_info "Successfully migrated user profile for Firefox versions"
     fi
 
