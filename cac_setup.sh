@@ -274,7 +274,7 @@ backup_ff_profile ()
         then
             print_info "Backing up Firefox profile"
             ff_profile="$(dirname "$location")"
-            sudo -H -u "$SUDO_USER" bash -c 'cp -rf "$ff_profile" "/tmp/ff_old_profile"'
+            sudo -H -u "$SUDO_USER" cp -rf "$ff_profile" "/tmp/ff_old_profile"
 
             backup_exists=1
         fi
@@ -291,7 +291,7 @@ migrate_ff_profile ()
         exit "$E_DB"
     else
         ff_profile_dir="$(dirname "$apt_ff_profile")"
-        sudo -H -u "$SUDO_USER" bash -c 'cp -rf /tmp/ff_old_profile "$ff_profile_dir"'
+        sudo -H -u "$SUDO_USER" cp -rf /tmp/ff_old_profile "$ff_profile_dir"
         print_info "Successfully migrated user profile for Firefox versions"
     fi
 
