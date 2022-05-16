@@ -291,7 +291,7 @@ migrate_ff_profile ()
         exit "$E_DB"
     else
         ff_profile_dir="$(dirname "$apt_ff_profile")"
-        sudo -H -u "$SUDO_USER" cp -rf /tmp/ff_old_profile "$ff_profile_dir"
+        sudo -H -u "$SUDO_USER" cp -rf /tmp/ff_old_profile/* "$ff_profile_dir"
         print_info "Successfully migrated user profile for Firefox versions"
     fi
 
