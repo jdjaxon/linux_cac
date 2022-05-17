@@ -196,7 +196,7 @@ reconfigure_firefox ()
 
     print_info "Finished, closing Firefox."
 
-    if [ "$backup_exists" == 1 ]
+    if [ "$backup_exists" == true ]
     then
         print_info "Migrating user profile into newly installed Firefox"
         migrate_ff_profile
@@ -211,16 +211,16 @@ browser_check ()
     check_for_chrome
 
     # Browser check results
-    if [ "$ff_exists" -eq 0 ] && [ "$chrome_exists" -eq 0 ]
+    if [ "$ff_exists" == false ] && [ "$chrome_exists" == false ]
     then
         print_err "No version of Mozilla Firefox OR Google Chrome has been detected."
         print_info "Please install either or both to proceed."
 
         exit "$E_BROWSER"
 
-    elif [ "$ff_exists" -eq 1 ] # Firefox was found
+    elif [ "$ff_exists" == true ] # Firefox was found
     then
-        if [ "$snap_ff" -eq 1 ] # Snap version of Firefox
+        if [ "$snap_ff" == true ] # Snap version of Firefox
         then
             echo -e "
             ********************${ERR_COLOR}[ WARNING ]${NO_COLOR}********************
@@ -233,9 +233,13 @@ browser_check ()
             * As a work-around, this script can automatically *
             * remove the snap version and reinstall via apt.  *
             *                                                 *
-            * If you are not signed in to Firefox, you will   *
-            * likely lose bookmarks or other personalizations *
-            * set in the current snap version of Firefox.     *
+            * The option to attempt to migrate all of your    *
+            * personalizations will be given if you choose to *
+            * replace Firefox via this script. Your Firefox   *
+            * profile will be saved to a temp location, then  *
+            * will overwrite the default profile once the apt *
+            * version of Firefox has been installed.          *
+            *                                                 *
             ********************${ERR_COLOR}[ WARNING ]${NO_COLOR}********************\n"
 
             # Prompt user to elect to replace snap firefox with apt firefox
@@ -250,7 +254,7 @@ browser_check ()
             then
                 reconfigure_firefox
             else
-                if [ $chrome_exists -eq 0 ]
+                if [ $chrome_exists == false ]
                 then
                     print_info "You have elected to keep the snap version of Firefox.\n"
                     print_err "You have no compatible browsers. Exiting..."
@@ -311,11 +315,11 @@ check_for_firefox ()
 {
     if command -v firefox >/dev/null
         then
-            ff_exists=1
+            ff_exists=true
             print_info "Found Firefox."
             if command -v firefox | grep snap >/dev/null
             then
-                snap_ff=1
+                snap_ff=true
                 print_err "This version of Firefox was installed as a snap package"
             else
                 # Run Firefox to ensure .mozilla directory has been created
@@ -336,7 +340,7 @@ check_for_chrome ()
     # Check to see if Chrome exists
     if command -v google-chrome >/dev/null
     then
-        chrome_exists=1
+        chrome_exists=true
         print_info "Found Google Chrome."
         # Run Chrome to ensure .pki directory has been created
 #        echo -e "\tRunning Chrome to ensure it has completed post-install actions..."
