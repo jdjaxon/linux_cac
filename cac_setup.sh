@@ -13,9 +13,9 @@ main ()
     DWNLD_DIR="/tmp"                    # Reliable location to place artifacts
     FF_PROFILE_NAME="old_ff_profile"    # Reliable location to place artifacts
 
-    chrome_exists=0                     # Google Chrome is installed
-    ff_exists=0                         # Firefox is installed
-    snap_ff=0                           # Flag to prompt for how to handle snap Firefox
+    chrome_exists=false                 # Google Chrome is installed
+    ff_exists=false                     # Firefox is installed
+    snap_ff=false                       # Flag to prompt for how to handle snap Firefox
 
     ORIG_HOME="$(getent passwd "$SUDO_USER" | cut -d: -f6)"
     CERT_EXTENSION="cer"
@@ -35,22 +35,23 @@ main ()
     if [ "${#databases[@]}" -eq 0 ]
     then
         # Database was not found
-        if [ "$snap_ff" == 1 ]
+        if [ "$snap_ff" == true ]
         then
             revert_firefox
         else
-            # Firefox was not replaced, exit with NODB error
-            print_err "No valid databases located. Exiting..."
+            # Firefox was not replaced, exit with E_DATABASE error
+            print_err "No valid databases located. Try running, then closing Firefox, then start this script again."
+            echo -e "\tExiting..."
 
             exit "$E_DATABASE"
         fi
     else
         # Database was found. (Good)
-        if [ "$snap_ff" == 1 ]
+        if [ "$snap_ff" == true ]
         then
             # Database was found, meaning snap firefox was replaced with apt version
             # This conditional branch may not be needed at all... Note: Remove if not needed
-            snap_ff=0
+            snap_ff=false
         fi
     fi
 
@@ -123,6 +124,8 @@ main ()
     exit "$EXIT_SUCCESS"
 } # main
 
+##
+#  Prints message with red [ERROR] tag before the message
 print_err ()
 {
     ERR_COLOR='\033[0;31m'  # Red for error messages
@@ -131,6 +134,7 @@ print_err ()
     echo -e "${ERR_COLOR}[ERROR]${NO_COLOR} $1"
 } # print_err
 
+# Prints message with yellow [INFO] tag before the message
 print_info ()
 {
     INFO_COLOR='\033[0;33m' # Yellow for notes
@@ -139,6 +143,7 @@ print_info ()
     echo -e "${INFO_COLOR}[INFO]${NO_COLOR} $1"
 } # print_info
 
+# Check to ensure the script is executed as root
 root_check ()
 {
     local ROOT_UID=0              # Only users with $UID 0 have root privileges
@@ -151,6 +156,7 @@ root_check ()
     fi
 } # root_check
 
+# Replace the current snap version of Firefox with the compatible apt version of Firefox
 reconfigure_firefox ()
 {
     # Replace snap Firefox with version from PPA maintained via Mozilla
@@ -426,12 +432,12 @@ repin_firefox ()
         # TODO: finish this
 
         curr_favorites=$(gsettings get org.gnome.shell favorite-apps)
-            print_info "Repinning Firefox to favorites bar"
+        print_info "Repinning Firefox to favorites bar"
 
-            # TODO: add repinning logic here
+        # TODO: add repinning logic here
 
-            print_info "Done."
-        fi
+        print_info "Done."
+
     fi
 
 } # repin_firefox
