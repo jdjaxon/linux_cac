@@ -124,8 +124,7 @@ main ()
     exit "$EXIT_SUCCESS"
 } # main
 
-##
-#  Prints message with red [ERROR] tag before the message
+# Prints message with red [ERROR] tag before the message
 print_err ()
 {
     ERR_COLOR='\033[0;31m'  # Red for error messages
@@ -161,6 +160,8 @@ reconfigure_firefox ()
 {
     # Replace snap Firefox with version from PPA maintained via Mozilla
 
+    check_for_ff_pin
+
     #Profile migration
     backup_ff_profile
 
@@ -187,23 +188,32 @@ reconfigure_firefox ()
         hash -d firefox
     fi
 
-    print_info "Starting Firefox silently to complete post-install actions..."
-    # TODO: test this
-    sudo -H -u "$SUDO_USER" firefox --headless --first-startup >/dev/null 2>&1 &
-    sleep 3
-    pkill -9 firefox
-    sleep 1
+    run_firefox
 
     print_info "Finished, closing Firefox."
 
     if [ "$backup_exists" == true ]
     then
         print_info "Migrating user profile into newly installed Firefox"
-        migrate_ff_profile
+        migrate_ff_profile "migrate"
     fi
+
+    repin_firefox
 
 } # reconfigure_firefox
 
+run_firefox ()
+{
+    print_info "Starting Firefox silently to complete post-install actions..."
+        sudo -H -u "$SUDO_USER" firefox --headless --first-startup >/dev/null 2>&1 &
+        sleep 3
+        pkill -9 firefox
+        sleep 1
+}
+
+# Discovery of browsers installed on the user's system
+# Sets appropriate flags to control the flow of the installation, depending on
+# what is needed for the individual user
 browser_check ()
 {
     print_info "Checking for Firefox and Chrome..."
@@ -266,6 +276,9 @@ browser_check ()
     fi
 }
 
+# Locate and backup the profile for the user's snap version of Firefox
+# Backup is placed in /tmp/ff_old_profile/ and can be restored after the
+# apt version of Firefox has been installed
 backup_ff_profile ()
 {
     location="$(find "$ORIG_HOME" -name "$DB_FILENAME" 2>/dev/null | grep "firefox" | grep -v "Trash" | grep snap)"
@@ -292,25 +305,51 @@ backup_ff_profile ()
     fi
 } # backup_ff_profile
 
+# Moves the user's backed up Firefox profile from the temp location to the newly
+# installed apt version of Firefox in the ~/.mozilla directory
+# TODO: Take arguments for source and destination so profile can be restored to
+# TODO: original location in the event of a failed install
 migrate_ff_profile ()
 {
-    apt_ff_profile="$(find "$ORIG_HOME" -name "$DB_FILENAME" 2>/dev/null | grep "firefox" | grep -v "Trash" | grep -v snap)"
-    if [ -z "$apt_ff_profile" ]
+    direction=$1
+
+    if [ "$direction" == "migrate" ]
     then
-        print_err "Something went wrong while trying to find apt Firefox's user profile directory."
-        exit "$E_DATABASE"
-    else
-        ff_profile_dir="$(dirname "$apt_ff_profile")"
-        if sudo -H -u "$SUDO_USER" cp -rf "$DWNLD_DIR/$FF_PROFILE_NAME"/* "$ff_profile_dir"
+        apt_ff_profile="$(find "$ORIG_HOME" -name "$DB_FILENAME" 2>/dev/null | grep "firefox" | grep -v "Trash" | grep -v snap)"
+        if [ -z "$apt_ff_profile" ]
         then
-            print_info "Successfully migrated user profile for Firefox versions"
+            print_err "Something went wrong while trying to find apt Firefox's user profile directory."
+            exit "$E_DATABASE"
         else
-            print_err "Unable to migrate Firefox profile"
+            ff_profile_dir="$(dirname "$apt_ff_profile")"
+            if sudo -H -u "$SUDO_USER" cp -rf "$DWNLD_DIR/$FF_PROFILE_NAME"/* "$ff_profile_dir"
+            then
+                print_info "Successfully migrated user profile for Firefox versions"
+            else
+                print_err "Unable to migrate Firefox profile"
+            fi
+        fi
+    elif [ "$direction" == "restore" ]
+    then
+        location="$(find "$ORIG_HOME" -name "$DB_FILENAME" 2>/dev/null | grep "firefox" | grep -v "Trash" | grep snap)"
+        if [ -z "$location" ]
+        then
+            print_info "No user profile was found in snap-installed version of Firefox."
+        else
+            ff_profile_dir="$(dirname "$apt_ff_profile")"
+            if sudo -H -u "$SUDO_USER" cp -rf "$DWNLD_DIR/$FF_PROFILE_NAME"/* "$ff_profile_dir"
+            then
+                print_info "Successfully restored user profile for Firefox"
+            else
+                print_err "Unable to migrate Firefox profile"
+            fi
         fi
     fi
 
 }
 
+# Attempt to find an installed version of Firefox on the user's system
+# Determines whether the version is installed via snap or apt
 check_for_firefox ()
 {
     if command -v firefox >/dev/null
@@ -334,7 +373,7 @@ check_for_firefox ()
             print_info "Firefox not found."
         fi
 }
-
+# Attempt to find a version of Google Chrome installed on the user's system
 check_for_chrome ()
 {
     # Check to see if Chrome exists
@@ -355,17 +394,26 @@ check_for_chrome ()
     fi
 }
 
+# Re-install the user's previous version of Firefox if the snap version was
+# removed in the process of this script.
 revert_firefox ()
 {
     # Firefox was replaced, lets put it back where it was.
     print_err "No valid databases located. Reinstalling previous version of Firefox..."
     apt purge firefox -y
     snap install firefox
+
+    run_firefox
+
     print_info "Completed. Exiting..."
+
+    # "Restore" old profile back to the snap version of Firefox
+    migrate_ff_profile "restore"
 
     exit "$E_DATABASE"
 }
 
+# Integrate all certificates into the databases for existing browsers
  import_certs ()
 {
     db=$1
@@ -402,6 +450,7 @@ revert_firefox ()
     echo
 } # import_certs
 
+# Check to see if the user has Firefox pinned to their favorites bar in GNOME
 check_for_ff_pin ()
 {
     # TODO: this needs to be done in the beginning to determine if
@@ -409,16 +458,13 @@ check_for_ff_pin ()
 
     if echo "$XDG_CURRENT_DESKTOP" | grep "GNOME" >/dev/null 2>&1
     then
-
-        # TODO: finish this
-
         print_info "Detected Gnome desktop environment"
-        is_gnome_desktop=true
+        is_gnome_desktop=true # TODO: Is this variable needed?
         if  echo "$curr_favorites" | grep "firefox.desktop" >/dev/null 2>&1
         then
             ff_was_pinned=true
         else
-            print_info "Firefox not found in favorites"
+            print_info "Firefox not pinned to favorites"
         fi
     else
         print_err "Desktop environment not yet supported."
@@ -438,7 +484,7 @@ repin_firefox ()
         curr_favorites=$(gsettings get org.gnome.shell favorite-apps)
         print_info "Repinning Firefox to favorites bar"
 
-        # TODO: add repinning logic here
+        gsettings set org.gnome.shell favorite-apps "$(gsettings get org.gnome.shell favorite-apps | sed s/.$//), 'firefox.desktop']"
 
         print_info "Done."
 
