@@ -456,10 +456,9 @@ check_for_ff_pin ()
     # TODO: this needs to be done in the beginning to determine if
     # firefox is a favorite and if gnome is the desktop environment.
 
-    if echo "$XDG_CURRENT_DESKTOP" | grep "GNOME" >/dev/null 2>&1
+    if sudo -u "$SUDO_USER" echo "$XDG_CURRENT_DESKTOP" | grep "GNOME" >/dev/null 2>&1
     then
         print_info "Detected Gnome desktop environment"
-        is_gnome_desktop=true # TODO: Is this variable needed?
         if  echo "$curr_favorites" | grep "firefox.desktop" >/dev/null 2>&1
         then
             ff_was_pinned=true
@@ -476,7 +475,7 @@ check_for_ff_pin ()
 repin_firefox ()
 {
     print_info "Attempting to repin Firefox to favorites bar..."
-    if [ is_gnome_desktop == true ] && [ ff_was_pinned == true ]
+    if [ $ff_was_pinned == true ]
     then
 
         # TODO: finish this
