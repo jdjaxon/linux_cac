@@ -453,10 +453,9 @@ revert_firefox ()
 # Check to see if the user has Firefox pinned to their favorites bar in GNOME
 check_for_ff_pin ()
 {
-    # TODO: this needs to be done in the beginning to determine if
     # firefox is a favorite and if gnome is the desktop environment.
 
-    if sudo -u "$SUDO_USER" echo "$XDG_CURRENT_DESKTOP" | grep "GNOME" >/dev/null 2>&1
+    if sudo -u "$SUDO_USER" bash -c "$(echo "$XDG_CURRENT_DESKTOP" | grep "GNOME" >/dev/null 2>&1)"
     then
         print_info "Detected Gnome desktop environment"
         if  echo "$curr_favorites" | grep "firefox.desktop" >/dev/null 2>&1
