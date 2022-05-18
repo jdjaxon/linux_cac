@@ -458,6 +458,7 @@ check_for_ff_pin ()
     if sudo -u "$SUDO_USER" bash -c "$(echo "$XDG_CURRENT_DESKTOP" | grep "GNOME" >/dev/null 2>&1)"
     then
         print_info "Detected Gnome desktop environment"
+        curr_favorites="$(gsettings get org.gnome.shell favorite-apps)"
         if  echo "$curr_favorites" | grep "firefox.desktop" >/dev/null 2>&1
         then
             ff_was_pinned=true
@@ -479,7 +480,8 @@ repin_firefox ()
 
         # TODO: finish this
 
-        curr_favorites=$(gsettings get org.gnome.shell favorite-apps)
+        # TODO: Might not need this line:
+        #curr_favorites=$(gsettings get org.gnome.shell favorite-apps)
         print_info "Repinning Firefox to favorites bar"
 
         gsettings set org.gnome.shell favorite-apps "$(gsettings get org.gnome.shell favorite-apps | sed s/.$//), 'firefox.desktop']"
