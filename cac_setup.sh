@@ -484,7 +484,8 @@ repin_firefox ()
         #curr_favorites=$(gsettings get org.gnome.shell favorite-apps)
         print_info "Repinning Firefox to favorites bar"
 
-        gsettings set org.gnome.shell favorite-apps "$(gsettings get org.gnome.shell favorite-apps | sed s/.$//), 'firefox.desktop']"
+        gsettings set org.gnome.shell favorite-apps "$(gsettings get org.gnome.shell favorite-apps | sed s/.$/ 'firefox.desktop']/)"
+        #curr_favorites+='firefox.destop'
 
         print_info "Done."
 
