@@ -34,7 +34,6 @@ main ()
     # Check if databases were found properly
     if [ "${#databases[@]}" -eq 0 ]
     then
-        # Database was not found
         if [ "$snap_ff" == true ]
         then
             revert_firefox
@@ -81,10 +80,9 @@ main ()
         fi
     fi
 
-    # Prevent cackey from upgrading.
-    # If cackey upgrades beyond 7.5, it moves libcackey.so to a different location,
-    # breaking Firefox. Returning libcackey.so to the original location does not
-    # seem to fix this issue.
+    # Prevent cackey from upgrading. If cackey upgrades beyond 7.5, it moves
+    # libcackey.so to a different location, breaking Firefox. Returning
+    # libcackey.so to the original location does not seem to fix this issue.
     if apt-mark hold cackey
     then
         print_info "Hold placed on cackey package"
@@ -99,7 +97,8 @@ main ()
         unzip "$DWNLD_DIR/$BUNDLE_FILENAME" -d "$DWNLD_DIR/$CERT_FILENAME"
     fi
 
-    # Import certificates into cert9.db databases for browsers
+    # Import certificates into each cert9.db databases for
+    # all supported browsers.
     for db in "${databases[@]}"
     do
         if [ -n "$db" ]
@@ -124,6 +123,7 @@ main ()
     exit "$EXIT_SUCCESS"
 } # main
 
+
 # Prints message with red [ERROR] tag before the message
 print_err ()
 {
@@ -132,6 +132,7 @@ print_err ()
 
     echo -e "${ERR_COLOR}[ERROR]${NO_COLOR} $1"
 } # print_err
+
 
 # Prints message with yellow [INFO] tag before the message
 print_info ()
@@ -142,7 +143,8 @@ print_info ()
     echo -e "${INFO_COLOR}[INFO]${NO_COLOR} $1"
 } # print_info
 
-# Check to ensure the script is executed as root
+
+# Checks to ensure the script is executed as root.
 root_check ()
 {
     local ROOT_UID=0              # Only users with $UID 0 have root privileges
@@ -154,6 +156,7 @@ root_check ()
         exit "$E_NOTROOT"
     fi
 } # root_check
+
 
 # Replace the current snap version of Firefox with the compatible apt version of Firefox
 reconfigure_firefox ()
@@ -199,9 +202,10 @@ reconfigure_firefox ()
     fi
 
     repin_firefox
-
 } # reconfigure_firefox
 
+
+# Runs firefox to initialize the profile and certificate database.
 run_firefox ()
 {
     print_info "Starting Firefox silently to complete post-install actions..."
@@ -209,11 +213,12 @@ run_firefox ()
     sleep 3
     pkill -9 firefox
     sleep 1
-}
+} # run_firefox
 
-# Discovery of browsers installed on the user's system
-# Sets appropriate flags to control the flow of the installation, depending on
-# what is needed for the individual user
+
+# Discovers browsers installed on the user's system and sets appropriate flags
+# to control the flow of the installation, depending on what is needed for the
+# individual user.
 browser_check ()
 {
     print_info "Checking for Firefox and Chrome..."
@@ -274,7 +279,8 @@ browser_check ()
             fi
         fi
     fi
-}
+} # browser_check
+
 
 # Locate and backup the profile for the user's snap version of Firefox
 # Backup is placed in /tmp/ff_old_profile/ and can be restored after the
@@ -304,6 +310,7 @@ backup_ff_profile ()
 
     fi
 } # backup_ff_profile
+
 
 # Moves the user's backed up Firefox profile from the temp location to the newly
 # installed apt version of Firefox in the ~/.mozilla directory
@@ -345,10 +352,9 @@ migrate_ff_profile ()
             fi
         fi
     fi
+} # migrate_ff_profile
 
-}
-
-# @brief Attempts to find an installed version of Firefox on the user's system
+# Attempts to find an installed version of Firefox on the user's system
 # and determines whether the version is installed via snap or apt.
 check_for_firefox ()
 {
@@ -372,7 +378,9 @@ check_for_firefox ()
         else
             print_info "Firefox not found."
         fi
-}
+} # check_for_firefox
+
+
 # Attempt to find a version of Google Chrome installed on the user's system
 check_for_chrome ()
 {
@@ -392,7 +400,8 @@ check_for_chrome ()
     else
         print_info "Chrome not found."
     fi
-}
+} # check_for_chrome
+
 
 # Re-install the user's previous version of Firefox if the snap version was
 # removed in the process of this script.
@@ -411,9 +420,10 @@ revert_firefox ()
     migrate_ff_profile "restore"
 
     exit "$E_DATABASE"
-}
+} #revert_firefox
 
-# Integrate all certificates into the databases for existing browsers
+
+# Integrate all certificates into the databases for existing browsers.
 import_certs ()
 {
     db=$1
@@ -450,7 +460,9 @@ import_certs ()
     echo
 } # import_certs
 
-# Check to see if the user has Firefox pinned to their favorites bar in GNOME
+
+# Check to see if the user has Firefox pinned to their favorites bar, if the
+# desktop environment is supported.
 check_for_ff_pin ()
 {
     # TODO: this needs to be done in the beginning to determine if
@@ -472,6 +484,9 @@ check_for_ff_pin ()
     fi
 } # check_for_ff_pin
 
+
+# Repins the firefox icon to the favorites toolbar, if it was there before the
+# conversion and the desktop environment is supported.
 repin_firefox ()
 {
     print_info "Attempting to repin Firefox to favorites bar..."
@@ -486,9 +501,9 @@ repin_firefox ()
         gsettings set org.gnome.shell favorite-apps "$(gsettings get org.gnome.shell favorite-apps | sed s/.$//), 'firefox.desktop']"
 
         print_info "Done."
-
     fi
-
 } # repin_firefox
 
+
+# Run the script
 main
