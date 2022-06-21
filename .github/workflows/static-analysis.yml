@@ -1,9 +1,11 @@
 on:
+  workflow_call:
+  workflow_dispatch:
   push:
     branches:
       - "*"
 
-name: 'Static Ananlysis'
+name: 'Static Analysis'
 
 jobs:
   shellcheck:
