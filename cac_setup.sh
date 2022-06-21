@@ -205,10 +205,10 @@ reconfigure_firefox ()
 run_firefox ()
 {
     print_info "Starting Firefox silently to complete post-install actions..."
-        sudo -H -u "$SUDO_USER" firefox --headless --first-startup >/dev/null 2>&1 &
-        sleep 3
-        pkill -9 firefox
-        sleep 1
+    sudo -H -u "$SUDO_USER" firefox --headless --first-startup >/dev/null 2>&1 &
+    sleep 3
+    pkill -9 firefox
+    sleep 1
 }
 
 # Discovery of browsers installed on the user's system
@@ -348,8 +348,8 @@ migrate_ff_profile ()
 
 }
 
-# Attempt to find an installed version of Firefox on the user's system
-# Determines whether the version is installed via snap or apt
+# @brief Attempts to find an installed version of Firefox on the user's system
+# and determines whether the version is installed via snap or apt.
 check_for_firefox ()
 {
     if command -v firefox >/dev/null
@@ -414,7 +414,7 @@ revert_firefox ()
 }
 
 # Integrate all certificates into the databases for existing browsers
- import_certs ()
+import_certs ()
 {
     db=$1
     db_root="$(dirname "$db")"
