@@ -10,6 +10,7 @@ main ()
     E_NOTROOT=86                        # Non-root exit error
     E_BROWSER=87                        # Compatible browser not found
     E_DATABASE=88                       # No database located
+    E_FIREFOX=89                        # Unable to add the PPA for Firefox
     DWNLD_DIR="/tmp"                    # Reliable location to place artifacts
     FF_PROFILE_NAME="old_ff_profile"    # Reliable location to place artifacts
 
@@ -43,7 +44,7 @@ main ()
             print_err "No valid databases located. Try running, then closing Firefox, then start this script again."
             echo -e "\tExiting..."
 
-            exit "$E_DATABASE"
+            exit $E_DATABASE
         fi
     else
         # Database was found. (Good)
@@ -77,7 +78,7 @@ main ()
         else
             print_err "Installation failed. Exiting..."
 
-            exit "$E_INSTALL"
+            exit $E_INSTALL
         fi
     fi
 
@@ -113,15 +114,14 @@ main ()
 
     # Remove artifacts
     print_info "Removing artifacts..."
-    rm -rf "${DWNLD_DIR:?}"/{"$BUNDLE_FILENAME","$CERT_FILENAME","$PKG_FILENAME","$FF_PROFILE_NAME"} 2>/dev/null
-    if [ "$?" -ne "$EXIT_SUCCESS" ]
+    if ! rm -rf "${DWNLD_DIR:?}"/{"$BUNDLE_FILENAME","$CERT_FILENAME","$PKG_FILENAME","$FF_PROFILE_NAME"} 2>/dev/null
     then
         print_err "Failed to remove artifacts"
     else
         print_info "Done."
     fi
 
-    exit "$EXIT_SUCCESS"
+    exit $EXIT_SUCCESS
 } # main
 
 # Prints message with red [ERROR] tag before the message
@@ -129,8 +129,7 @@ print_err ()
 {
     ERR_COLOR='\033[0;31m'  # Red for error messages
     NO_COLOR='\033[0m'      # Revert terminal back to no color
-
-    echo -e "${ERR_COLOR}[ERROR]${NO_COLOR} $1"
+    echo -e "${ERR_COLOR}[ERROR]${NO_COLOR} ${1}"
 } # print_err
 
 # Prints message with yellow [INFO] tag before the message
@@ -138,77 +137,80 @@ print_info ()
 {
     INFO_COLOR='\033[0;33m' # Yellow for notes
     NO_COLOR='\033[0m'      # Revert terminal back to no color
-
-    echo -e "${INFO_COLOR}[INFO]${NO_COLOR} $1"
+    echo -e "${INFO_COLOR}[INFO]${NO_COLOR} ${1}"
 } # print_info
 
 # Check to ensure the script is executed as root
 root_check ()
 {
-    local ROOT_UID=0              # Only users with $UID 0 have root privileges
+    # Only users with $UID 0 have root privileges
+    local ROOT_UID=0
 
     # Ensure the script is ran as root
-    if [ "${EUID:-$(id -u)}" -ne "$ROOT_UID" ]
+    if [ "${EUID:-$(id -u)}" -ne $ROOT_UID ]
     then
         print_err "Please run this script as root."
-        exit "$E_NOTROOT"
+        exit $E_NOTROOT
     fi
 } # root_check
 
 # Replace the current snap version of Firefox with the compatible apt version of Firefox
 reconfigure_firefox ()
 {
-    # Replace snap Firefox with version from PPA maintained via Mozilla
-
+    # Determine if Firefox is already pinned to the favorites bar.
     check_for_ff_pin
 
-    #Profile migration
+    # Backup Firefox profile for the migration later.
+    backup_exists=0
     backup_ff_profile
 
-    print_info "Removing Snap version of Firefox"
-    snap remove --purge firefox
-
+    # Replace snap Firefox with version from PPA maintained via Mozilla.
     print_info "Adding PPA for Mozilla maintained Firefox"
-    add-apt-repository -y ppa:mozillateam/ppa
-
-    print_info "Setting priority to prefer Mozilla PPA over snap package"
-    echo -e "Package: *\nPin: release o=LP-PPA-mozillateam\nPin-Priority: 1001" > /etc/apt/preferences.d/mozilla-firefox
-
-    print_info "Enabling updates for future Firefox releases"
-    # shellcheck disable=SC2016
-    echo -e 'Unattended-Upgrade::Allowed-Origins:: "LP-PPA-mozillateam:${distro_codename}";' > /etc/apt/apt.conf.d/51unattended-upgrades-firefox
-
-    print_info "Installing Firefox via apt"
-    apt install firefox -y
-    print_info "Completed re-installation of Firefox"
-
-    # Forget the previous location of firefox executable
-    if hash firefox
+    if add-apt-repository -y ppa:mozillateam/ppa
     then
-        hash -d firefox
+        print_info "Setting priority to prefer Mozilla PPA over snap package"
+        echo -e "Package: *\nPin: release o=LP-PPA-mozillateam\nPin-Priority: 1001" > /etc/apt/preferences.d/mozilla-firefox
+
+        print_info "Enabling updates for future Firefox releases"
+        # shellcheck disable=SC2016
+        echo -e 'Unattended-Upgrade::Allowed-Origins:: "LP-PPA-mozillateam:${distro_codename}";' > /etc/apt/apt.conf.d/51unattended-upgrades-firefox
+
+        print_info "Removing Snap version of Firefox"
+        snap remove --purge firefox
+
+        print_info "Installing Firefox via apt"
+        apt install firefox -y
+        print_info "Completed re-installation of Firefox"
+
+        # Forget the previous location of firefox executable
+        if hash firefox
+        then
+            hash -d firefox
+        fi
+
+        run_firefox
+
+        if [ $backup_exists -eq 1 ]
+        then
+            print_info "Migrating user profile into newly installed Firefox"
+            migrate_ff_profile "migrate"
+        fi
+
+        repin_firefox
+    else
+        print_err "Failed to add Firefox PPA."
+        exit $E_FIREFOX
     fi
-
-    run_firefox
-
-    print_info "Finished, closing Firefox."
-
-    if [ "$backup_exists" == true ]
-    then
-        print_info "Migrating user profile into newly installed Firefox"
-        migrate_ff_profile "migrate"
-    fi
-
-    repin_firefox
-
 } # reconfigure_firefox
 
 run_firefox ()
 {
     print_info "Starting Firefox silently to complete post-install actions..."
-        sudo -H -u "$SUDO_USER" firefox --headless --first-startup >/dev/null 2>&1 &
-        sleep 3
-        pkill -9 firefox
-        sleep 1
+    sudo -H -u "$SUDO_USER" firefox --headless --first-startup >/dev/null 2>&1 &
+    sleep 3
+    print_info "Finished, closing Firefox."
+    pkill -9 firefox
+    sleep 1
 }
 
 # Discovery of browsers installed on the user's system
@@ -226,8 +228,7 @@ browser_check ()
         print_err "No version of Mozilla Firefox OR Google Chrome has been detected."
         print_info "Please install either or both to proceed."
 
-        exit "$E_BROWSER"
-
+        exit $E_BROWSER
     elif [ "$ff_exists" == true ] # Firefox was found
     then
         if [ "$snap_ff" == true ] # Snap version of Firefox
@@ -319,7 +320,7 @@ migrate_ff_profile ()
         if [ -z "$apt_ff_profile" ]
         then
             print_err "Something went wrong while trying to find apt Firefox's user profile directory."
-            exit "$E_DATABASE"
+            exit $E_DATABASE
         else
             ff_profile_dir="$(dirname "$apt_ff_profile")"
             if sudo -H -u "$SUDO_USER" cp -rf "$DWNLD_DIR/$FF_PROFILE_NAME"/* "$ff_profile_dir"
@@ -410,7 +411,7 @@ revert_firefox ()
     # "Restore" old profile back to the snap version of Firefox
     migrate_ff_profile "restore"
 
-    exit "$E_DATABASE"
+    exit $E_DATABASE
 }
 
 # Integrate all certificates into the databases for existing browsers

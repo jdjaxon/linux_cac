@@ -37,7 +37,7 @@ distributions and versions here that I know have been tested with this method.
 | Distribution | Versions  |    Browsers     |
 |    :-:       |    :-:    |       :-:       |
 | Ubuntu       | 20.04 LTS | Firefox, Chrome |
-|              | 22.04 LTS | Chrome          |
+|              | 22.04 LTS | Firefox, Chrome |
 | PopOS!       | 20.04 LTS | Firefox, Chrome |
 |              | 22.04 LTS | Firefox, Chrome |
 
