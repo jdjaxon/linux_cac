@@ -21,11 +21,12 @@ Vagrant.configure("2") do |config|
       vb.customize ["modifyvm", :id, "--memory", 4096]
     end
 
-    cfg.vm.provision "shell", inline: 'apt-get update'
-    cfg.vm.provision "shell", inline: 'sudo apt install -y tasksel'
-    cfg.vm.provision "shell", inline: 'sudo tasksel install ubuntu-desktop'
-    cfg.vm.provision "shell", inline: 'reboot'
-    cfg.vm.provision "shell", inline: 'sudo systemctl set-default graphical.target'
-    cfg.vm.provision "shell", inline: 'sudo bash -c "$(wget https://raw.githubusercontent.com/jdjaxon/linux_cac/main/cac_setup.sh -O -)"'
+    cfg.vm.provision "shell", inline: 'apt-get update', privileged: true
+    cfg.vm.provision "shell", inline: 'apt-get update', privileged: true
+    cfg.vm.provision "shell", inline: 'sudo apt install -y tasksel', privileged: true
+    cfg.vm.provision "shell", inline: 'sudo tasksel install ubuntu-desktop', privileged: true
+    cfg.vm.provision "shell", inline: 'reboot', privileged: true
+    cfg.vm.provision "shell", inline: 'sudo systemctl set-default graphical.target', privileged: true
+    cfg.vm.provision "shell", inline: 'sudo bash -c "$(wget https://raw.githubusercontent.com/jdjaxon/linux_cac/main/cac_setup.sh -O -)"', privileged: true
   end
 end
