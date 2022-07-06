@@ -30,7 +30,7 @@ Vagrant.configure("2") do |config|
     cfg.vm.provision "shell", inline: 'apt install -y virtualbox-guest-utils'
     #cfg.vm.provision "shell", inline: 'wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub|sudo apt-key add -'
     cfg.vm.provision "shell", inline: 'sudo sh -c "echo \'deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main\' > /etc/apt/sources.list.d/google.list"'
-    cfg.vm.provision "shell", inline: 'apt install -y google-chrome firefox'
+    cfg.vm.provision "shell", inline: 'apt install -y firefox'
     #cfg.vm.provision "shell", inline: 'reboot'
 
     # Setting up VM with the CAC setup script.
