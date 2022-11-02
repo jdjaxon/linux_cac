@@ -1,12 +1,10 @@
 # Linux CAC Configuration
-
 A project for consistently configuring DOD CACs on Linux. Currently, this
 process will not work with Firefox if it is installed via `snap`. Before using
 this project, please review the [Known Issues](#known-issues) section.
 
 
 ## Table of Contents
-
 <details>
 <summary>
 <b>Click to Toggle Expansion</b>
@@ -33,33 +31,22 @@ this project, please review the [Known Issues](#known-issues) section.
 
 Regardless of how similar two distributions may be, I will only list
 distributions and versions here that I know have been tested with this method.
+Ubuntu 22.04, Firefox will only work if you allow the script to remove the `snap`
+version and reinstall the browser with `apt`.
 
 | Distribution | Versions  |    Browsers     |
 |    :-:       |    :-:    |       :-:       |
 | Ubuntu       | 20.04 LTS | Firefox, Chrome |
-|              | 22.04 LTS | Chrome          |
+|              | 22.04 LTS | Firefox, Chrome |
 | PopOS!       | 20.04 LTS | Firefox, Chrome |
 |              | 22.04 LTS | Firefox, Chrome |
 
+There are reports of this script also working with both Linux Mint and the Brave
+browser, but I have not tested these configurations.
+
 
 ## Installation
-
-Please run either the [Automated Installation](#automated-installation) or the
-[Manual Installation](#manual-installation), but not both.
-
-
-### Automated Installation
-
-<details>
-<summary>
-<b>Click to Toggle Expansion</b>
-</summary>
-
-\
 **WARNING:** Please make sure all browsers are closed before running the script.
-
-If you choose this option, you do not need to do the
-[manual installation](#manual-installation).
 
 This script requires root privileges since it installs the `cackey` package and
 its dependencies. Feel free to review the script
@@ -82,7 +69,6 @@ recommended by [militarycac](https://militarycac.com).
 
 
 #### Methods
-
 - `wget`
 ```bash
 sudo bash -c "$(wget https://raw.githubusercontent.com/jdjaxon/linux_cac/main/cac_setup.sh -O -)"
@@ -98,98 +84,7 @@ sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/jdjaxon/linux_cac/m
 sudo bash -c "$(fetch -o https://raw.githubusercontent.com/jdjaxon/linux_cac/main/cac_setup.sh)"
 ```
 
-</details>
-
----
-
-### Manual Installation
-
-<details>
-<summary>
-<b>Click to Toggle Expansion</b>
-</summary>
-
-\
-**WARNING:** Only perform these steps if you have ***not*** done the [automated installation](#automated-installation).
-
-#### Staging
-
-1. Run the following command to install the CAC middleware:
-```bash
-sudo apt install libpcsclite1 pcscd libccid libpcsc-perl pcsc-tools libnss3-tools
-```
-
-2. To verify that your CAC is detected, run (stop with ctrl+c):
-```bash
-pcsc_scan
-```
-3. Download and install cackey from [here](http://cackey.rkeene.org/fossil/wiki?name=Downloads).
-
-4. Run the following command to verify the location of the cackey module and make note of the location:
-```bash
-find / -name libcackey.so 2>/dev/null
-```
-- **NOTE:** `libcackey.so` should be in one of the following locations:
-```bash
-/usr/lib/libcackey.so
-        OR
-/usr/lib64/libcackey.so
-```
-
-5. If `apt` updates cackey from 7.5 to 7.10, it will move `libcackey.so` to a
-   different location.
-To prevent cackey from updating, run the following:
-```bash
-sudo apt-mark hold cackey
-```
-
-- **NOTE**: The cackey package will still show as upgradeable.
-
-6. Download DOD certs from DISA [here](https://militarycac.com/maccerts/AllCerts.zip).
-
-7. Unzip the `AllCerts.zip` folder using the following command:
-```bash
-unzip AllCerts.zip -d AllCerts
-```
-
-#### Browser Configuration
-
----
-
-##### Google Chrome
-
-1. `cd` into the newly created `AllCerts` directory
-2. Run the following command:
-```bash
-for cert in *.cer; do certutil -d sql:"$HOME/.pki/nssdb" -A -t TC -n "$cert" -i "$cert"; done
-```
-3. Run the following command:
-```bash
-printf "library=/usr/lib64/libcackey.so\nname=CAC Module" >> $HOME/.pki/nssdb/pkcs11.txt
-```
-
-##### Firefox
-
-1. `cd` into the `AllCerts` directory
-2. Run the following command:
-```bash
-for cert in *.cer; do certutil -d sql:"$(dirname "$(find "$HOME/.mozilla" -name "cert9.db")")" -A -t TC -n "$cert" -i "$cert"; done
-```
-3. Run the following command:
-```bash
-printf "library=/usr/lib64/libcackey.so\nname=CAC Module" >> "$(dirname "$(find "$HOME/.mozilla" -name "cert9.db")")/pkcs11.txt"
-```
-
-- **NOTE**: Since the firefox database directory starts with a random string of
-  characters, it needs to be found dynamically. Its naming and location follows
-  this convention: `$HOME/.mozilla/firefox/<alpahnumeric
-  string>.default-release`.
-
-</details>
-
-
 ## Known Issues
-
 - Firefox and Chrome both need to be started at least once to initialize their
   respective certificate databases/profiles.
 
@@ -199,25 +94,26 @@ printf "library=/usr/lib64/libcackey.so\nname=CAC Module" >> "$(dirname "$(find 
   installed via snap by default. There is an outstanding bug
   (https://bugzilla.mozilla.org/show_bug.cgi?id=1734371) that prevents Firefox
   from being able to read the certificates. One solution could be to uninstall
-  Firefox from snap and reinstall it via `apt`.
+  Firefox from snap and reinstall it via `apt`. This current version of the
+  script will attempt to do this reinstallation for you.
 
 - If you upgraded from 20.04 to 22.04 on either PopOS or Ubuntu, this likely
   also upgraded the cackey package from 7.5 to the latest version, which
-  currently breaks this process. You can either rerun the script or run through
-  step three through five of the [manual installation](#manual-installation).
+  currently breaks this process. You can simply remove cackey and rerun the
+  script to resolve this.
 
 - If you run into any issues with firefox after running the script, clear your
   data and history in `Privacy & Security` and then restart firefox. If your
   troubles are with MS Teams, see the section for [troubleshooting
-  teams](#microsoft-teams).
+  teams](#microsoft-teams). Chrome is recommended for MS Teams since Firefox
+  does not currently support Teams meetings. You can see more about this
+  [here](https://support.microsoft.com/en-us/office/join-a-teams-meeting-on-an-unsupported-browser-daafdd3c-ac7a-4855-871b-9113bad15907).
 
 - Firefox will likely start up a bit slower after running this installation.
 
 
 ## Troubleshooting
-
 ### Microsoft Teams
-
 If you run into issues with MS Teams, try the following steps:
 1. In the Firefox Settings window, select the `Privacy & Security` tab.
 2. Under `Cookies and Site Data`, select `Manage Exceptions`.
@@ -239,7 +135,6 @@ See the official documentation for this issue
 
 
 ## Resources
-
 - https://militarycac.com/linux.htm (this was my starting point)
 - https://chromium.googlesource.com/chromium/src.git/+/refs/heads/main/docs/linux/cert_management.md
 - https://firefox-source-docs.mozilla.org/security/nss/legacy/tools/nss_tools_certutil/index.html
