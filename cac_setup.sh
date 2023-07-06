@@ -308,7 +308,7 @@ backup_ff_profile ()
 # Moves the user's backed up Firefox profile from the temp location to the newly
 # installed apt version of Firefox in the ~/.mozilla directory
 # TODO: Take arguments for source and destination so profile can be restored to
-# TODO: original location in the event of a failed install
+#       original location in the event of a failed install
 migrate_ff_profile ()
 {
     direction=$1
@@ -474,9 +474,8 @@ check_for_ff_pin ()
 repin_firefox ()
 {
     print_info "Attempting to repin Firefox to favorites bar..."
-    if [ $ff_was_pinned == true ]
+    if [ "$ff_was_pinned" == true ]
     then
-
         # TODO: finish this
 
         curr_favorites=$(gsettings get org.gnome.shell favorite-apps)
@@ -485,9 +484,7 @@ repin_firefox ()
         gsettings set org.gnome.shell favorite-apps "$(gsettings get org.gnome.shell favorite-apps | sed s/.$//), 'firefox.desktop']"
 
         print_info "Done."
-
     fi
-
 } # repin_firefox
 
 main
