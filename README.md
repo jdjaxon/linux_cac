@@ -1,5 +1,5 @@
 # Linux CAC Configuration
-A project for consistently configuring DOD CACs on Linux. Currently, this
+A project for consistently configuring DoD CACs on Linux. Currently, this
 process will not work with Firefox if it is installed via `snap`. Before using
 this project, please review the [Known Issues](#known-issues) section.
 
@@ -51,14 +51,12 @@ browser, but I have not tested these configurations.
 ## Installation
 **WARNING:** Please make sure all browsers are closed before running the script.
 
-This script requires root privileges since it installs the `cackey` package and
+This script requires root privileges since it installs `opensc` package and
 its dependencies. Feel free to review the script
 [here](https://raw.githubusercontent.com/jdjaxon/linux_cac/main/cac_setup.sh)
-if this makes you uncomfortable. For transparency, the `cackey` package is
-downloaded from
-[here](https://cackey.rkeene.org/download/0.7.5/cackey_0.7.5-1_amd64.deb) and
+if this makes you uncomfortable. For transparency, the 
 the DoD certificates are downloaded from
-[here](https://militarycac.com/maccerts/AllCerts.zip), both of which are
+[here](https://militarycac.com/maccerts/AllCerts.zip), which are
 recommended by [militarycac](https://militarycac.com).
 
 **Important Notes:**
@@ -68,7 +66,6 @@ recommended by [militarycac](https://militarycac.com).
   remove <command>`.
 - The scripted installation has only been tested on the configurations listed in the
   [Supported Distributions](#supported-distributions)
-- This script uses the 64-bit version of the cackey package.
 
 
 #### Methods
@@ -100,9 +97,7 @@ sudo bash -c "$(fetch -o https://raw.githubusercontent.com/jdjaxon/linux_cac/mai
   Firefox from snap and reinstall it via `apt`. This current version of the
   script will attempt to do this reinstallation for you.
 
-- If you upgraded from 20.04 to 22.04 on either PopOS or Ubuntu, this likely
-  also upgraded the cackey package from 7.5 to the latest version, which
-  currently breaks this process. You can simply remove cackey and rerun the
+- Recent DoD certificates do not work with cackey. You can simply rerun the
   script to resolve this.
 
 - If you run into any issues with firefox after running the script, clear your

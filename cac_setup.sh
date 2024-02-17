@@ -24,8 +24,6 @@ main ()
     CERT_FILENAME="AllCerts"
     BUNDLE_FILENAME="AllCerts.zip"
     CERT_URL="http://militarycac.com/maccerts/$BUNDLE_FILENAME"
-    PKG_FILENAME="cackey_0.7.5-1_amd64.deb"
-    CACKEY_URL="http://cackey.rkeene.org/download/0.7.5/$PKG_FILENAME"
 
     root_check
     browser_check
@@ -58,39 +56,13 @@ main ()
     # Install middleware and necessary utilities
     print_info "Installing middleware..."
     apt update
-    DEBIAN_FRONTEND=noninteractive apt install -y libpcsclite1 pcscd libccid libpcsc-perl pcsc-tools libnss3-tools unzip wget
+    DEBIAN_FRONTEND=noninteractive apt install -y libpcsclite1 pcscd libccid libpcsc-perl pcsc-tools libnss3-tools unzip opensc-pkcs11
     print_info "Done"
 
     # Pull all necessary files
     print_info "Downloading DoD certificates and Cackey package..."
     wget -qP "$DWNLD_DIR" "$CERT_URL"
-    wget -qP "$DWNLD_DIR" "$CACKEY_URL"
     print_info "Done."
-
-    # Install libcackey.
-    if [ -e "$DWNLD_DIR/$PKG_FILENAME" ]
-    then
-        print_info "Installing libcackey..."
-        if dpkg -i "$DWNLD_DIR/$PKG_FILENAME"
-        then
-            print_info "Done."
-        else
-            print_err "Installation failed. Exiting..."
-
-            exit "$E_INSTALL"
-        fi
-    fi
-
-    # Prevent cackey from upgrading.
-    # If cackey upgrades beyond 7.5, it moves libcackey.so to a different location,
-    # breaking Firefox. Returning libcackey.so to the original location does not
-    # seem to fix this issue.
-    if apt-mark hold cackey
-    then
-        print_info "Hold placed on cackey package"
-    else
-        print_err "Failed to place hold on cackey package"
-    fi
 
     # Unzip cert bundle
     if [ -e "$DWNLD_DIR/$BUNDLE_FILENAME" ]
@@ -360,6 +332,10 @@ check_for_firefox ()
             then
                 snap_ff=true
                 print_err "This version of Firefox was installed as a snap package"
+            elif command -v firefox | xargs grep -Fq "exec /snap/bin/firefox"
+            then
+                snap_ff=true
+                print_err "This version of Firefox was installed as a snap package with a launch script"
             else
                 # Run Firefox to ensure .mozilla directory has been created
                 echo -e "Running Firefox to generate profile directory..."
@@ -440,9 +416,9 @@ revert_firefox ()
             certutil -d sql:"$db_root" -A -t TC -n "$cert" -i "$cert"
         done
 
-        if ! grep -Pzo 'library=/usr/lib64/libcackey.so\nname=CAC Module\n' "$db_root/$PKCS_FILENAME" >/dev/null
+        if ! grep -Pzo 'library=/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so\nname=CAC Module\n' "$db_root/$PKCS_FILENAME" >/dev/null
         then
-            printf "library=/usr/lib64/libcackey.so\nname=CAC Module\n" >> "$db_root/$PKCS_FILENAME"
+            printf "library=/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so\nname=CAC Module\n" >> "$db_root/$PKCS_FILENAME"
         fi
     fi
 
