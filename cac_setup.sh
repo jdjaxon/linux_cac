@@ -56,11 +56,12 @@ main ()
     # Install middleware and necessary utilities
     print_info "Installing middleware..."
     apt update
+    DEBIAN_FRONTEND=noninteractive apt purge -y cackey
     DEBIAN_FRONTEND=noninteractive apt install -y libpcsclite1 pcscd libccid libpcsc-perl pcsc-tools libnss3-tools unzip opensc-pkcs11
     print_info "Done"
 
     # Pull all necessary files
-    print_info "Downloading DoD certificates and Cackey package..."
+    print_info "Downloading DoD certificates..."
     wget -qP "$DWNLD_DIR" "$CERT_URL"
     print_info "Done."
 

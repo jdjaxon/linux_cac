@@ -97,8 +97,9 @@ sudo bash -c "$(fetch -o https://raw.githubusercontent.com/jdjaxon/linux_cac/mai
   Firefox from snap and reinstall it via `apt`. This current version of the
   script will attempt to do this reinstallation for you.
 
-- Recent DoD certificates do not work with cackey. You can simply rerun the
-  script to resolve this.
+- Recent DoD certificates do not work with cackey and will cause errors like 
+  `ERR_SSL_CLIENT_AUTH_NO_COMMON_ALGORITHMS`. You can simply rerun the script 
+  to resolve this.
 
 - If you run into any issues with firefox after running the script, clear your
   data and history in `Privacy & Security` and then restart firefox. If your
