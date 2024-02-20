@@ -55,7 +55,7 @@ main ()
     print_info "Installing middleware and essential utilities..."
     apt update
     DEBIAN_FRONTEND=noninteractive apt purge -y cackey
-    DEBIAN_FRONTEND=noninteractive apt install -y libpcsclite1 pcscd libccid libpcsc-perl pcsc-tools libnss3-tools unzip wget opensc-pkcs11
+    DEBIAN_FRONTEND=noninteractive apt install -y libpcsclite1 pcscd libccid libpcsc-perl pcsc-tools libnss3-tools unzip wget opensc
     print_info "Done"
 
     # Pull all necessary files
