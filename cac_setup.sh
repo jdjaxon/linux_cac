@@ -157,7 +157,7 @@ reconfigure_firefox ()
     # shellcheck disable=SC2016
     echo -e 'Unattended-Upgrade::Allowed-Origins:: "LP-PPA-mozillateam:${distro_codename}";' > /etc/apt/apt.conf.d/51unattended-upgrades-firefox
     print_info "Installing Firefox via apt"
-    DEBIAN_FRONTEND=noninteractive apt install firefox -y
+    DEBIAN_FRONTEND=noninteractive apt install firefox
     print_info "Completed re-installation of Firefox"
 
     # Forget the previous location of firefox executable
@@ -387,11 +387,9 @@ revert_firefox ()
     print_err "No valid databases located. Reinstalling previous version of Firefox..."
     DEBIAN_FRONTEND=noninteractive apt purge firefox -y
     snap install firefox
-
     run_firefox
-
     print_info "Completed. Exiting..."
-# "Restore" old profile back to the snap version of Firefox
+    # "Restore" old profile back to the snap version of Firefox
     migrate_ff_profile "restore"
 
     exit "$E_DATABASE"
@@ -462,9 +460,7 @@ repin_firefox ()
 
         curr_favorites=$(gsettings get org.gnome.shell favorite-apps)
         print_info "Repinning Firefox to favorites bar"
-
         gsettings set org.gnome.shell favorite-apps "$(gsettings get org.gnome.shell favorite-apps | sed s/.$//), 'firefox.desktop']"
-
         print_info "Done."
     fi
 } # repin_firefox
