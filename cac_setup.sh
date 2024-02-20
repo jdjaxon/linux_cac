@@ -6,12 +6,11 @@
 main ()
 {
     EXIT_SUCCESS=0                      # Success exit code
-    E_INSTALL=85                        # Installation failed
     E_NOTROOT=86                        # Non-root exit error
     E_BROWSER=87                        # Compatible browser not found
     E_DATABASE=88                       # No database located
-    DWNLD_DIR="/tmp"                    # Reliable location to place artifacts
-    FF_PROFILE_NAME="old_ff_profile"    # Reliable location to place artifacts
+    DWNLD_DIR="/tmp"                    # Location to place artifacts
+    FF_PROFILE_NAME="old_ff_profile"    # Location to save old Firefox profile
 
     chrome_exists=false                 # Google Chrome is installed
     ff_exists=false                     # Firefox is installed
@@ -19,7 +18,7 @@ main ()
 
     ORIG_HOME="$(getent passwd "$SUDO_USER" | cut -d: -f6)"
     CERT_EXTENSION="cer"
-    PKCS_FILENAME="pkcs11.txt"
+    # PKCS_FILENAME="pkcs11.txt"
     DB_FILENAME="cert9.db"
     CERT_FILENAME="AllCerts"
     BUNDLE_FILENAME="AllCerts.zip"
@@ -27,7 +26,6 @@ main ()
 
     root_check
     browser_check
-
     mapfile -t databases < <(find "$ORIG_HOME" -name "$DB_FILENAME" 2>/dev/null | grep "firefox\|pki" | grep -v "Trash\|snap")
     # Check if databases were found properly
     if [ "${#databases[@]}" -eq 0 ]
@@ -54,7 +52,7 @@ main ()
     fi
 
     # Install middleware and necessary utilities
-    print_info "Installing middleware..."
+    print_info "Installing middleware and essential utilities..."
     apt update
     DEBIAN_FRONTEND=noninteractive apt purge -y cackey
     DEBIAN_FRONTEND=noninteractive apt install -y libpcsclite1 pcscd libccid libpcsc-perl pcsc-tools libnss3-tools unzip wget opensc-pkcs11
@@ -81,44 +79,57 @@ main ()
         fi
     done
 
+    print_info "Registering CAC module with PKSC11..."
+    pkcs11-register
+    print_info "Done"
+
+    # NOTE: Keeping this temporarily to test `pkcs11-register`.
+    # if ! grep -Pzo 'library=/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so\nname=CAC Module\n' "$db_root/$PKCS_FILENAME" >/dev/null
+    # then
+    #     printf "library=/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so\nname=CAC Module\n" >> "$db_root/$PKCS_FILENAME"
+    # fi
+
     print_info "Enabling pcscd service to start on boot..."
     systemctl enable pcscd.socket
+    print_info "Done"
 
     # Remove artifacts
     print_info "Removing artifacts..."
-    rm -rf "${DWNLD_DIR:?}"/{"$BUNDLE_FILENAME","$CERT_FILENAME","$PKG_FILENAME","$FF_PROFILE_NAME"} 2>/dev/null
+    rm -rf "${DWNLD_DIR:?}"/{"$BUNDLE_FILENAME","$CERT_FILENAME","$FF_PROFILE_NAME"} 2>/dev/null
     if [ "$?" -ne "$EXIT_SUCCESS" ]
     then
-        print_err "Failed to remove artifacts"
+        print_err "Failed to remove artifacts. Artifacts were stored in ${DWNLD_DIR}."
     else
-        print_info "Done."
+        print_info "Done. A reboot may be required."
     fi
 
     exit "$EXIT_SUCCESS"
 } # main
+
 
 # Prints message with red [ERROR] tag before the message
 print_err ()
 {
     ERR_COLOR='\033[0;31m'  # Red for error messages
     NO_COLOR='\033[0m'      # Revert terminal back to no color
-
     echo -e "${ERR_COLOR}[ERROR]${NO_COLOR} $1"
 } # print_err
+
 
 # Prints message with yellow [INFO] tag before the message
 print_info ()
 {
     INFO_COLOR='\033[0;33m' # Yellow for notes
     NO_COLOR='\033[0m'      # Revert terminal back to no color
-
     echo -e "${INFO_COLOR}[INFO]${NO_COLOR} $1"
 } # print_info
+
 
 # Check to ensure the script is executed as root
 root_check ()
 {
-    local ROOT_UID=0              # Only users with $UID 0 have root privileges
+    # Only users with $UID 0 have root privileges
+    local ROOT_UID=0
 
     # Ensure the script is ran as root
     if [ "${EUID:-$(id -u)}" -ne "$ROOT_UID" ]
@@ -128,31 +139,25 @@ root_check ()
     fi
 } # root_check
 
+
 # Replace the current snap version of Firefox with the compatible apt version of Firefox
 reconfigure_firefox ()
 {
     # Replace snap Firefox with version from PPA maintained via Mozilla
-
     check_for_ff_pin
-
     #Profile migration
     backup_ff_profile
-
     print_info "Removing Snap version of Firefox"
     snap remove --purge firefox
-
     print_info "Adding PPA for Mozilla maintained Firefox"
     add-apt-repository -y ppa:mozillateam/ppa
-
     print_info "Setting priority to prefer Mozilla PPA over snap package"
     echo -e "Package: *\nPin: release o=LP-PPA-mozillateam\nPin-Priority: 1001" > /etc/apt/preferences.d/mozilla-firefox
-
     print_info "Enabling updates for future Firefox releases"
     # shellcheck disable=SC2016
     echo -e 'Unattended-Upgrade::Allowed-Origins:: "LP-PPA-mozillateam:${distro_codename}";' > /etc/apt/apt.conf.d/51unattended-upgrades-firefox
-
     print_info "Installing Firefox via apt"
-    apt install firefox -y
+    DEBIAN_FRONTEND=noninteractive apt install firefox -y
     print_info "Completed re-installation of Firefox"
 
     # Forget the previous location of firefox executable
@@ -162,7 +167,6 @@ reconfigure_firefox ()
     fi
 
     run_firefox
-
     print_info "Finished, closing Firefox."
 
     if [ "$backup_exists" == true ]
@@ -172,17 +176,18 @@ reconfigure_firefox ()
     fi
 
     repin_firefox
-
 } # reconfigure_firefox
+
 
 run_firefox ()
 {
     print_info "Starting Firefox silently to complete post-install actions..."
-        sudo -H -u "$SUDO_USER" firefox --headless --first-startup >/dev/null 2>&1 &
-        sleep 3
-        pkill -9 firefox
-        sleep 1
-}
+    sudo -H -u "$SUDO_USER" firefox --headless --first-startup >/dev/null 2>&1 &
+    sleep 3
+    pkill -9 firefox
+    sleep 1
+} # run_firefox
+
 
 # Discovery of browsers installed on the user's system
 # Sets appropriate flags to control the flow of the installation, depending on
@@ -198,9 +203,7 @@ browser_check ()
     then
         print_err "No version of Mozilla Firefox OR Google Chrome has been detected."
         print_info "Please install either or both to proceed."
-
         exit "$E_BROWSER"
-
     elif [ "$ff_exists" == true ] # Firefox was found
     then
         if [ "$snap_ff" == true ] # Snap version of Firefox
@@ -241,13 +244,13 @@ browser_check ()
                 then
                     print_info "You have elected to keep the snap version of Firefox.\n"
                     print_err "You have no compatible browsers. Exiting..."
-
                     exit $E_BROWSER
                 fi
             fi
         fi
     fi
-}
+} # browser_check
+
 
 # Locate and backup the profile for the user's snap version of Firefox
 # Backup is placed in /tmp/ff_old_profile/ and can be restored after the
@@ -277,6 +280,7 @@ backup_ff_profile ()
 
     fi
 } # backup_ff_profile
+
 
 # Moves the user's backed up Firefox profile from the temp location to the newly
 # installed apt version of Firefox in the ~/.mozilla directory
@@ -319,7 +323,8 @@ migrate_ff_profile ()
         fi
     fi
 
-}
+} # migrate_ff_profile
+
 
 # Attempt to find an installed version of Firefox on the user's system
 # Determines whether the version is installed via snap or apt
@@ -349,7 +354,9 @@ check_for_firefox ()
         else
             print_info "Firefox not found."
         fi
-}
+} # check_for_firefox
+
+
 # Attempt to find a version of Google Chrome installed on the user's system
 check_for_chrome ()
 {
@@ -369,7 +376,8 @@ check_for_chrome ()
     else
         print_info "Chrome not found."
     fi
-}
+} # check_for_chrome
+
 
 # Re-install the user's previous version of Firefox if the snap version was
 # removed in the process of this script.
@@ -377,21 +385,21 @@ revert_firefox ()
 {
     # Firefox was replaced, lets put it back where it was.
     print_err "No valid databases located. Reinstalling previous version of Firefox..."
-    apt purge firefox -y
+    DEBIAN_FRONTEND=noninteractive apt purge firefox -y
     snap install firefox
 
     run_firefox
 
     print_info "Completed. Exiting..."
-
-    # "Restore" old profile back to the snap version of Firefox
+# "Restore" old profile back to the snap version of Firefox
     migrate_ff_profile "restore"
 
     exit "$E_DATABASE"
-}
+} # revert_firefox
+
 
 # Integrate all certificates into the databases for existing browsers
- import_certs ()
+import_certs ()
 {
     db=$1
     db_root="$(dirname "$db")"
@@ -416,16 +424,12 @@ revert_firefox ()
             echo "Importing $cert"
             certutil -d sql:"$db_root" -A -t TC -n "$cert" -i "$cert"
         done
-
-        if ! grep -Pzo 'library=/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so\nname=CAC Module\n' "$db_root/$PKCS_FILENAME" >/dev/null
-        then
-            printf "library=/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so\nname=CAC Module\n" >> "$db_root/$PKCS_FILENAME"
-        fi
     fi
 
     echo "Done."
     echo
 } # import_certs
+
 
 # Check to see if the user has Firefox pinned to their favorites bar in GNOME
 check_for_ff_pin ()
@@ -448,6 +452,7 @@ check_for_ff_pin ()
     fi
 } # check_for_ff_pin
 
+
 repin_firefox ()
 {
     print_info "Attempting to repin Firefox to favorites bar..."
@@ -463,5 +468,6 @@ repin_firefox ()
         print_info "Done."
     fi
 } # repin_firefox
+
 
 main
