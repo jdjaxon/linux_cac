@@ -40,6 +40,9 @@ version and reinstall the browser with `apt`.
 |              | 22.04 LTS | Firefox, Chrome |
 | PopOS!       | 20.04 LTS | Firefox, Chrome |
 |              | 22.04 LTS | Firefox, Chrome |
+| Mint         | 21.2      | Firefox, Chrome |
+
+
 
 There are reports of this script also working with both Linux Mint and the Brave
 browser, but I have not tested these configurations.
