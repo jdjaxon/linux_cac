@@ -98,8 +98,8 @@ sudo bash -c "$(fetch -o https://raw.githubusercontent.com/jdjaxon/linux_cac/mai
   `ERR_SSL_CLIENT_AUTH_NO_COMMON_ALGORITHMS`. You can simply rerun the script
   to resolve this.
 
-- If you run into any issues with firefox after running the script, clear your
-  data and history in `Privacy & Security` and then restart firefox. If your
+- If you run into any issues with Firefox after running the script, clear your
+  data and history in `Privacy & Security` and then restart Firefox. If your
   troubles are with MS Teams, see the section for [troubleshooting
   teams](#microsoft-teams). Chrome is recommended for MS Teams since Firefox
   does not currently support Teams meetings. You can see more about this
