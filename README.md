@@ -31,21 +31,20 @@ this project, please review the [Known Issues](#known-issues) section.
 
 Regardless of how similar two distributions may be, I will only list
 distributions and versions here that I know have been tested with this method.
-Ubuntu 22.04, Firefox will only work if you allow the script to remove the `snap`
-version and reinstall the browser with `apt`.
+On Ubuntu 22.04, Firefox will only work if you allow the script to remove the
+`snap` version and reinstall the browser with `apt`.
 
-| Distribution | Versions  |    Browsers     |
+| Distribution | Versions  | Browsers        |
 |    :-:       |    :-:    |       :-:       |
 | Ubuntu       | 20.04 LTS | Firefox, Chrome |
 |              | 22.04 LTS | Firefox, Chrome |
 | PopOS!       | 20.04 LTS | Firefox, Chrome |
 |              | 22.04 LTS | Firefox, Chrome |
 | Mint         | 21.2      | Firefox, Chrome |
+| Parrot OS    | 6.0.0-2   | Firefox, Brave  |
 
-
-
-There are reports of this script also working with both Linux Mint and the Brave
-browser, but I have not tested these configurations.
+**NOTE:** There are reports of this script working with other distributions and
+browsers. I have not personally tested these configurations.
 
 
 ## Installation
@@ -54,7 +53,7 @@ browser, but I have not tested these configurations.
 This script requires root privileges since it installs `opensc` package and
 its dependencies. Feel free to review the script
 [here](https://raw.githubusercontent.com/jdjaxon/linux_cac/main/cac_setup.sh)
-if this makes you uncomfortable. For transparency, the 
+if this makes you uncomfortable. For transparency, the
 the DoD certificates are downloaded from
 [here](https://militarycac.com/maccerts/AllCerts.zip), which are
 recommended by [militarycac](https://militarycac.com).
@@ -88,8 +87,6 @@ sudo bash -c "$(fetch -o https://raw.githubusercontent.com/jdjaxon/linux_cac/mai
 - Firefox and Chrome both need to be started at least once to initialize their
   respective certificate databases/profiles.
 
-- CAC needs to be inserted before starting Firefox.
-
 - Ubuntu 21.10 and greater (to include the latest LTS 22.04) have Firefox
   installed via snap by default. There is an outstanding bug
   (https://bugzilla.mozilla.org/show_bug.cgi?id=1734371) that prevents Firefox
@@ -97,8 +94,8 @@ sudo bash -c "$(fetch -o https://raw.githubusercontent.com/jdjaxon/linux_cac/mai
   Firefox from snap and reinstall it via `apt`. This current version of the
   script will attempt to do this reinstallation for you.
 
-- Recent DoD certificates do not work with cackey and will cause errors like 
-  `ERR_SSL_CLIENT_AUTH_NO_COMMON_ALGORITHMS`. You can simply rerun the script 
+- Recent DoD certificates do not work with cackey and will cause errors like
+  `ERR_SSL_CLIENT_AUTH_NO_COMMON_ALGORITHMS`. You can simply rerun the script
   to resolve this.
 
 - If you run into any issues with firefox after running the script, clear your
