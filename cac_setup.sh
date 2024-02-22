@@ -157,7 +157,7 @@ reconfigure_firefox ()
     # shellcheck disable=SC2016
     echo -e 'Unattended-Upgrade::Allowed-Origins:: "LP-PPA-mozillateam:${distro_codename}";' > /etc/apt/apt.conf.d/51unattended-upgrades-firefox
     print_info "Installing Firefox via apt"
-    DEBIAN_FRONTEND=noninteractive apt install firefox
+    DEBIAN_FRONTEND=noninteractive apt install -y --allow-downgrades firefox
     print_info "Completed re-installation of Firefox"
 
     # Forget the previous location of firefox executable
@@ -179,6 +179,7 @@ reconfigure_firefox ()
 } # reconfigure_firefox
 
 
+# Run Firefox to ensure the profile directory has been created
 run_firefox ()
 {
     print_info "Starting Firefox silently to complete post-install actions..."
@@ -189,12 +190,12 @@ run_firefox ()
 } # run_firefox
 
 
+# Run Chrome to ensure .pki directory has been created
 run_chrome ()
 {
     # NOTE: this is the original
     # sudo -H -u "$SUDO_USER" bash -c 'google-chrome --headless --disable-gpu >/dev/null 2>&1 &'
 
-    # Run Chrome to ensure .pki directory has been created
     # TODO: finish troubleshooting this
     print_info "Running Chrome to ensure it has completed post-install actions..."
     sudo -H -u "$SUDO_USER" google-chrome --headless --disable-gpu >/dev/null 2>&1 &
@@ -361,10 +362,7 @@ check_for_firefox ()
             else
                 # Run Firefox to ensure .mozilla directory has been created
                 echo -e "Running Firefox to generate profile directory..."
-                sudo -H -u "$SUDO_USER" bash -c 'firefox --headless --first-startup >/dev/null 2>&1 &'
-                sleep 3
-                pkill -9 firefox
-                sleep 1
+                run_firefox
                 echo -e "\tDone."
             fi
         else
@@ -443,7 +441,6 @@ import_certs ()
 check_for_ff_pin ()
 {
     # firefox is a favorite and if gnome is the desktop environment.
-
     if sudo -u "$SUDO_USER" bash -c "$(echo "$XDG_CURRENT_DESKTOP" | grep "GNOME" >/dev/null 2>&1)"
     then
         print_info "Detected Gnome desktop environment"
@@ -467,7 +464,6 @@ repin_firefox ()
     if [ "$ff_was_pinned" == true ]
     then
         # TODO: finish this
-
         curr_favorites=$(gsettings get org.gnome.shell favorite-apps)
         print_info "Repinning Firefox to favorites bar"
         gsettings set org.gnome.shell favorite-apps "$(gsettings get org.gnome.shell favorite-apps | sed s/.$//), 'firefox.desktop']"
