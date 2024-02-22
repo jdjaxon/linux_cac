@@ -189,6 +189,22 @@ run_firefox ()
 } # run_firefox
 
 
+run_chrome ()
+{
+    # NOTE: this is the original
+    # sudo -H -u "$SUDO_USER" bash -c 'google-chrome --headless --disable-gpu >/dev/null 2>&1 &'
+
+    # Run Chrome to ensure .pki directory has been created
+    # TODO: finish troubleshooting this
+    print_info "Running Chrome to ensure it has completed post-install actions..."
+    sudo -H -u "$SUDO_USER" google-chrome --headless --disable-gpu >/dev/null 2>&1 &
+    sleep 3
+    pkill -9 google-chrome
+    sleep 1
+    print_info "Done."
+} # run_chrome
+
+
 # Discovery of browsers installed on the user's system
 # Sets appropriate flags to control the flow of the installation, depending on
 # what is needed for the individual user
@@ -366,13 +382,7 @@ check_for_chrome ()
         chrome_exists=true
         print_info "Found Google Chrome."
         # Run Chrome to ensure .pki directory has been created
-#        echo -e "\tRunning Chrome to ensure it has completed post-install actions..."
-#        # TODO: finish troubleshooting this
-#        sudo -H -u "$SUDO_USER" bash -c 'google-chrome --headless --disable-gpu >/dev/null 2>&1 &'
-#        sleep 3
-#        pkill -9 google-chrome
-#        sleep 1
-#        echo -e "\tDone."
+        run_chrome
     else
         print_info "Chrome not found."
     fi
