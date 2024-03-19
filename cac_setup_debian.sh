@@ -30,15 +30,66 @@ main ()
     root_check
     browser_check
 
-    check_distro
+    mapfile -t databases < <(find "$ORIG_HOME" -name "$DB_FILENAME" 2>/dev/null | grep "firefox\|pki" | grep -v "Trash\|snap")
+    # Check if databases were found properly
+    if [ "${#databases[@]}" -eq 0 ]
+    then
+        # Database was not found
+        if [ "$snap_ff" == true ]
+        then
+            revert_firefox
+        else
+            # Firefox was not replaced, exit with E_DATABASE error
+            print_err "No valid databases located. Try running, then closing Firefox, then start this script again."
+            echo -e "\tExiting..."
 
-    if [ "$distro" == "debian" ]; then
-        setup_debian
-    elif [ "$distro" == "arch" ]; then
-        setup_arch
+            exit "$E_DATABASE"
+        fi
     else
-        echo "The current distribution is not supported by this script."
-        exit 1
+        # Database was found. (Good)
+        if [ "$snap_ff" == true ]
+        then
+            # Database was found, meaning snap firefox was replaced with apt version
+            # This conditional branch may not be needed at all... Note: Remove if not needed
+            snap_ff=false
+        fi
+    fi
+
+    # Install middleware and necessary utilities
+    print_info "Installing middleware..."
+    apt update
+    DEBIAN_FRONTEND=noninteractive apt install -y libpcsclite1 pcscd libccid libpcsc-perl pcsc-tools libnss3-tools unzip wget
+    print_info "Done"
+
+    # Pull all necessary files
+    print_info "Downloading DoD certificates and Cackey package..."
+    wget -qP "$DWNLD_DIR" "$CERT_URL"
+    wget -qP "$DWNLD_DIR" "$CACKEY_URL"
+    print_info "Done."
+
+    # Install libcackey.
+    if [ -e "$DWNLD_DIR/$PKG_FILENAME" ]
+    then
+        print_info "Installing libcackey..."
+        if dpkg -i "$DWNLD_DIR/$PKG_FILENAME"
+        then
+            print_info "Done."
+        else
+            print_err "Installation failed. Exiting..."
+
+            exit "$E_INSTALL"
+        fi
+    fi
+
+    # Prevent cackey from upgrading.
+    # If cackey upgrades beyond 7.5, it moves libcackey.so to a different location,
+    # breaking Firefox. Returning libcackey.so to the original location does not
+    # seem to fix this issue.
+    if apt-mark hold cackey
+    then
+        print_info "Hold placed on cackey package"
+    else
+        print_err "Failed to place hold on cackey package"
     fi
 
     # Unzip cert bundle
@@ -167,12 +218,7 @@ browser_check ()
 {
     print_info "Checking for Firefox and Chrome..."
     check_for_firefox
-
-    if [ "$distro" == "debian" ]; then
-        check_for_chrome_debian
-    elif [ "$distro" == "arch" ]; then
-        check_for_chrome_arch
-    fi
+    check_for_chrome
 
     # Browser check results
     if [ "$ff_exists" == false ] && [ "$chrome_exists" == false ]
@@ -328,7 +374,7 @@ check_for_firefox ()
         fi
 }
 # Attempt to find a version of Google Chrome installed on the user's system
-check_for_chrome_debian ()
+check_for_chrome ()
 {
     # Check to see if Chrome exists
     if command -v google-chrome >/dev/null
@@ -343,19 +389,6 @@ check_for_chrome_debian ()
 #        pkill -9 google-chrome
 #        sleep 1
 #        echo -e "\tDone."
-    else
-        print_info "Chrome not found."
-    fi
-}
-
-
-check_for_chrome_arch ()
-{
-    # Check to see if Chrome exists
-    if command -v google-chrome-stable >/dev/null
-    then
-        chrome_exists=true
-        print_info "Found Google Chrome."
     else
         print_info "Chrome not found."
     fi
@@ -454,133 +487,4 @@ repin_firefox ()
     fi
 } # repin_firefox
 
-check_distro() {
-    if [ -f /etc/os-release ]; then
-        # Check if the distribution is Debian-based
-        if grep -q -i "debian" /etc/os-release || \
-           grep -q -i "ubuntu" /etc/os-release || \
-           grep -q -i "pop" /etc/os-release || \
-           grep -q -i "mint" /etc/os-release; then
-            distro="debian"
-        # Check if the distribution is Arch Linux
-        elif grep -q -i "arch" /etc/os-release; then
-            distro="arch"
-        else
-            distro="other"
-        fi
-    else
-        distro="unknown"
-    fi
-}
-
-setup_debian() {
-    mapfile -t databases < <(find "$ORIG_HOME" -name "$DB_FILENAME" 2>/dev/null | grep "firefox\|pki" | grep -v "Trash\|snap")
-    # Check if databases were found properly
-    if [ "${#databases[@]}" -eq 0 ]
-    then
-        # Database was not found
-        if [ "$snap_ff" == true ]
-        then
-            revert_firefox
-        else
-            # Firefox was not replaced, exit with E_DATABASE error
-            print_err "No valid databases located. Try running, then closing Firefox, then start this script again."
-            echo -e "\tExiting..."
-
-            exit "$E_DATABASE"
-        fi
-    else
-        # Database was found. (Good)
-        if [ "$snap_ff" == true ]
-        then
-            # Database was found, meaning snap firefox was replaced with apt version
-            # This conditional branch may not be needed at all... Note: Remove if not needed
-            snap_ff=false
-            fi
-        fi
-
-    # Install middleware and necessary utilities
-    print_info "Installing middleware..."
-    apt update
-    DEBIAN_FRONTEND=noninteractive apt install -y libpcsclite1 pcscd libccid libpcsc-perl pcsc-tools libnss3-tools unzip wget
-    print_info "Done"
-
-    # Pull all necessary files
-    print_info "Downloading DoD certificates and Cackey package..."
-    wget -qP "$DWNLD_DIR" "$CERT_URL"
-    wget -qP "$DWNLD_DIR" "$CACKEY_URL"
-    print_info "Done."
-
-    # Install libcackey.
-    if [ -e "$DWNLD_DIR/$PKG_FILENAME" ]
-    then
-        print_info "Installing libcackey..."
-        if dpkg -i "$DWNLD_DIR/$PKG_FILENAME"
-        then
-            print_info "Done."
-        else
-            print_err "Installation failed. Exiting..."
-
-            exit "$E_INSTALL"
-        fi
-    fi
-
-    # Prevent cackey from upgrading.
-    # If cackey upgrades beyond 7.5, it moves libcackey.so to a different location,
-    # breaking Firefox. Returning libcackey.so to the original location does not
-    # seem to fix this issue.
-    if apt-mark hold cackey
-    then
-        print_info "Hold placed on cackey package"
-    else
-        print_err "Failed to place hold on cackey package"
-    fi
-}
-
-setup_arch() {
-    mapfile -t databases < <(find "$ORIG_HOME" -name "$DB_FILENAME" 2>/dev/null | grep "firefox\|pki" | grep -v "Trash")
-    # Check if databases were found properly
-    if [ "${#databases[@]}" -eq 0 ]
-    then
-        # Database was not found
-        print_err "No valid databases located. Try running, then closing Firefox, then start this script again."
-        echo -e "\tExiting..."
-
-        exit "$E_DATABASE"
-    fi
-
-    # Install middleware and necessary utilities
-    print_info "Installing middleware..."
-    pacman -Syu --noconfirm
-    pacman -S --noconfirm ccid opensc pcsc-tools nss unzip wget
-    print_info "Done"
-
-    # Pull all necessary files
-    print_info "Downloading DoD certificates and Cackey package..."
-    wget -qP "$DWNLD_DIR" "$CERT_URL"
-    wget -qP "$DWNLD_DIR" "$CACKEY_URL"
-    print_info "Done."
-
-
-    # Install libcackey.
-    if command -v yay >/dev/null 2>&1; then
-        print_info "Installing libcackey using yay..."
-        sudo -u "$SUDO_USER" yay -S --noconfirm cackey
-    elif command -v paru >/dev/null 2>&1; then
-        print_info "Installing libcackey using paru..."
-        sudo -u "$SUDO_USER" paru -S --noconfirm cackey
-    else
-        print_err "Neither yay nor paru is available. Please install one of them and try again."
-        exit 1
-    fi
-
-    # Check if libcackey.so is installed
-    libcackey_path=$(find /usr -name "libcackey.so" | head -n 1)
-    if [ -z "$libcackey_path" ]; then
-        print_err "libcackey.so not found after installation. Please check the installation manually."
-        exit 1
-    else
-        print_info "libcackey.so found at $libcackey_path"
-    fi
-}
 main

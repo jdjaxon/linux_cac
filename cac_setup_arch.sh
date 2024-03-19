@@ -15,7 +15,6 @@ main ()
 
     chrome_exists=false                 # Google Chrome is installed
     ff_exists=false                     # Firefox is installed
-    snap_ff=false                       # Flag to prompt for how to handle snap Firefox
 
     ORIG_HOME="$(getent passwd "$SUDO_USER" | cut -d: -f6)"
     CERT_EXTENSION="cer"
@@ -24,53 +23,87 @@ main ()
     CERT_FILENAME="AllCerts"
     BUNDLE_FILENAME="AllCerts.zip"
     CERT_URL="http://militarycac.com/maccerts/$BUNDLE_FILENAME"
-    PKG_FILENAME="cackey_0.7.5-1_amd64.deb"
-    CACKEY_URL="http://cackey.rkeene.org/download/0.7.5/$PKG_FILENAME"
+    PKG_FILENAME="cackey_0.7.5-1_amd64.pkg.tar.xz"
+    CACKEY_URL="https://aur.archlinux.org/cgit/aur.git/snapshot/cackey.tar.gz"
 
     root_check
     browser_check
 
-    check_distro
-
-    if [ "$distro" == "debian" ]; then
-        setup_debian
-    elif [ "$distro" == "arch" ]; then
-        setup_arch
-    else
-        echo "The current distribution is not supported by this script."
-        exit 1
-    fi
-
-    # Unzip cert bundle
-    if [ -e "$DWNLD_DIR/$BUNDLE_FILENAME" ]
+    mapfile -t databases < <(find "$ORIG_HOME" -name "$DB_FILENAME" 2>/dev/null | grep "firefox\|pki" | grep -v "Trash")
+    # Check if databases were found properly
+    if [ "${#databases[@]}" -eq 0 ]
     then
-        mkdir -p "$DWNLD_DIR/$CERT_FILENAME"
-        unzip "$DWNLD_DIR/$BUNDLE_FILENAME" -d "$DWNLD_DIR/$CERT_FILENAME"
+        # Database was not found
+        print_err "No valid databases located. Try running, then closing Firefox, then start this script again."
+        echo -e "\tExiting..."
+
+        exit "$E_DATABASE"
     fi
 
-    # Import certificates into cert9.db databases for browsers
-    for db in "${databases[@]}"
-    do
-        if [ -n "$db" ]
-        then
-            import_certs "$db"
-        fi
-    done
+# Install middleware and necessary utilities
+print_info "Installing middleware..."
+pacman -Syu --noconfirm
+pacman -S --noconfirm ccid opensc pcsc-tools nss unzip wget
+print_info "Done"
 
-    print_info "Enabling pcscd service to start on boot..."
-    systemctl enable pcscd.socket
+# Pull all necessary files
+print_info "Downloading DoD certificates and Cackey package..."
+wget -qP "$DWNLD_DIR" "$CERT_URL"
+wget -qP "$DWNLD_DIR" "$CACKEY_URL"
+print_info "Done."
 
-    # Remove artifacts
-    print_info "Removing artifacts..."
-    rm -rf "${DWNLD_DIR:?}"/{"$BUNDLE_FILENAME","$CERT_FILENAME","$PKG_FILENAME","$FF_PROFILE_NAME"} 2>/dev/null
-    if [ "$?" -ne "$EXIT_SUCCESS" ]
+
+# Install libcackey.
+if command -v yay >/dev/null 2>&1; then
+    print_info "Installing libcackey using yay..."
+    sudo -u "$SUDO_USER" yay -S --noconfirm cackey
+elif command -v paru >/dev/null 2>&1; then
+    print_info "Installing libcackey using paru..."
+    sudo -u "$SUDO_USER" paru -S --noconfirm cackey
+else
+    print_err "Neither yay nor paru is available. Please install one of them and try again."
+    exit 1
+fi
+
+# Check if libcackey.so is installed
+libcackey_path=$(find /usr -name "libcackey.so" | head -n 1)
+if [ -z "$libcackey_path" ]; then
+    print_err "libcackey.so not found after installation. Please check the installation manually."
+    exit 1
+else
+    print_info "libcackey.so found at $libcackey_path"
+fi
+
+# Unzip cert bundle
+if [ -e "$DWNLD_DIR/$BUNDLE_FILENAME" ]
+then
+    mkdir -p "$DWNLD_DIR/$CERT_FILENAME"
+    unzip "$DWNLD_DIR/$BUNDLE_FILENAME" -d "$DWNLD_DIR/$CERT_FILENAME"
+fi
+
+# Import certificates into cert9.db databases for browsers
+for db in "${databases[@]}"
+do
+    if [ -n "$db" ]
     then
-        print_err "Failed to remove artifacts"
-    else
-        print_info "Done."
+        import_certs "$db"
     fi
+done
 
-    exit "$EXIT_SUCCESS"
+print_info "Enabling pcscd service to start on boot..."
+systemctl enable pcscd.socket
+
+# Remove artifacts
+print_info "Removing artifacts..."
+rm -rf "${DWNLD_DIR:?}"/{"$BUNDLE_FILENAME","$CERT_FILENAME","$PKG_FILENAME","$FF_PROFILE_NAME"} 2>/dev/null
+if [ "$?" -ne "$EXIT_SUCCESS" ]
+then
+    print_err "Failed to remove artifacts"
+else
+    print_info "Done."
+fi
+
+exit "$EXIT_SUCCESS"
 } # main
 
 # Prints message with red [ERROR] tag before the message
@@ -154,10 +187,10 @@ reconfigure_firefox ()
 run_firefox ()
 {
     print_info "Starting Firefox silently to complete post-install actions..."
-        sudo -H -u "$SUDO_USER" firefox --headless --first-startup >/dev/null 2>&1 &
-        sleep 3
-        pkill -9 firefox
-        sleep 1
+    sudo -H -u "$SUDO_USER" firefox --headless --first-startup >/dev/null 2>&1 &
+    sleep 3
+    pkill -9 firefox
+    sleep 1
 }
 
 # Discovery of browsers installed on the user's system
@@ -167,12 +200,7 @@ browser_check ()
 {
     print_info "Checking for Firefox and Chrome..."
     check_for_firefox
-
-    if [ "$distro" == "debian" ]; then
-        check_for_chrome_debian
-    elif [ "$distro" == "arch" ]; then
-        check_for_chrome_arch
-    fi
+    check_for_chrome
 
     # Browser check results
     if [ "$ff_exists" == false ] && [ "$chrome_exists" == false ]
@@ -226,9 +254,9 @@ browser_check ()
                     exit $E_BROWSER
                 fi
             fi
+            fi
         fi
-    fi
-}
+    }
 
 # Locate and backup the profile for the user's snap version of Firefox
 # Backup is placed in /tmp/ff_old_profile/ and can be restored after the
@@ -307,49 +335,28 @@ migrate_ff_profile ()
 check_for_firefox ()
 {
     if command -v firefox >/dev/null
-        then
-            ff_exists=true
-            print_info "Found Firefox."
-            if command -v firefox | grep snap >/dev/null
-            then
-                snap_ff=true
-                print_err "This version of Firefox was installed as a snap package"
-            else
-                # Run Firefox to ensure .mozilla directory has been created
-                echo -e "Running Firefox to generate profile directory..."
-                sudo -H -u "$SUDO_USER" bash -c 'firefox --headless --first-startup >/dev/null 2>&1 &'
-                sleep 3
-                pkill -9 firefox
-                sleep 1
-                echo -e "\tDone."
-            fi
-        else
-            print_info "Firefox not found."
-        fi
-}
-# Attempt to find a version of Google Chrome installed on the user's system
-check_for_chrome_debian ()
-{
-    # Check to see if Chrome exists
-    if command -v google-chrome >/dev/null
     then
-        chrome_exists=true
-        print_info "Found Google Chrome."
-        # Run Chrome to ensure .pki directory has been created
-#        echo -e "\tRunning Chrome to ensure it has completed post-install actions..."
-#        # TODO: finish troubleshooting this
-#        sudo -H -u "$SUDO_USER" bash -c 'google-chrome --headless --disable-gpu >/dev/null 2>&1 &'
-#        sleep 3
-#        pkill -9 google-chrome
-#        sleep 1
-#        echo -e "\tDone."
+        ff_exists=true
+        print_info "Found Firefox."
+        if command -v firefox | grep snap >/dev/null
+        then
+            snap_ff=true
+            print_err "This version of Firefox was installed as a snap package"
+        else
+            # Run Firefox to ensure .mozilla directory has been created
+            echo -e "Running Firefox to generate profile directory..."
+            sudo -H -u "$SUDO_USER" bash -c 'firefox --headless --first-startup >/dev/null 2>&1 &'
+            sleep 3
+            pkill -9 firefox
+            sleep 1
+            echo -e "\tDone."
+        fi
     else
-        print_info "Chrome not found."
+        print_info "Firefox not found."
     fi
 }
-
-
-check_for_chrome_arch ()
+# Attempt to find a version of Google Chrome installed on the user's system
+check_for_chrome ()
 {
     # Check to see if Chrome exists
     if command -v google-chrome-stable >/dev/null
@@ -381,7 +388,7 @@ revert_firefox ()
 }
 
 # Integrate all certificates into the databases for existing browsers
- import_certs ()
+import_certs ()
 {
     db=$1
     db_root="$(dirname "$db")"
@@ -407,9 +414,14 @@ revert_firefox ()
             certutil -d sql:"$db_root" -A -t TC -n "$cert" -i "$cert"
         done
 
-        if ! grep -Pzo 'library=/usr/lib64/libcackey.so\nname=CAC Module\n' "$db_root/$PKCS_FILENAME" >/dev/null
-        then
-            printf "library=/usr/lib64/libcackey.so\nname=CAC Module\n" >> "$db_root/$PKCS_FILENAME"
+        libcackey_path=$(ldconfig -p | awk '/libcackey\.so/ {print $NF}')
+        if [ -n "$libcackey_path" ]; then
+            if ! grep -Pzo "library=$libcackey_path\nname=CAC Module\n" "$db_root/$PKCS_FILENAME" >/dev/null
+            then
+                printf "library=$libcackey_path\nname=CAC Module\n" >> "$db_root/$PKCS_FILENAME"
+            fi
+        else
+            print_err "libcackey.so not found. Please ensure the cackey package is installed correctly."
         fi
     fi
 
@@ -454,133 +466,4 @@ repin_firefox ()
     fi
 } # repin_firefox
 
-check_distro() {
-    if [ -f /etc/os-release ]; then
-        # Check if the distribution is Debian-based
-        if grep -q -i "debian" /etc/os-release || \
-           grep -q -i "ubuntu" /etc/os-release || \
-           grep -q -i "pop" /etc/os-release || \
-           grep -q -i "mint" /etc/os-release; then
-            distro="debian"
-        # Check if the distribution is Arch Linux
-        elif grep -q -i "arch" /etc/os-release; then
-            distro="arch"
-        else
-            distro="other"
-        fi
-    else
-        distro="unknown"
-    fi
-}
-
-setup_debian() {
-    mapfile -t databases < <(find "$ORIG_HOME" -name "$DB_FILENAME" 2>/dev/null | grep "firefox\|pki" | grep -v "Trash\|snap")
-    # Check if databases were found properly
-    if [ "${#databases[@]}" -eq 0 ]
-    then
-        # Database was not found
-        if [ "$snap_ff" == true ]
-        then
-            revert_firefox
-        else
-            # Firefox was not replaced, exit with E_DATABASE error
-            print_err "No valid databases located. Try running, then closing Firefox, then start this script again."
-            echo -e "\tExiting..."
-
-            exit "$E_DATABASE"
-        fi
-    else
-        # Database was found. (Good)
-        if [ "$snap_ff" == true ]
-        then
-            # Database was found, meaning snap firefox was replaced with apt version
-            # This conditional branch may not be needed at all... Note: Remove if not needed
-            snap_ff=false
-            fi
-        fi
-
-    # Install middleware and necessary utilities
-    print_info "Installing middleware..."
-    apt update
-    DEBIAN_FRONTEND=noninteractive apt install -y libpcsclite1 pcscd libccid libpcsc-perl pcsc-tools libnss3-tools unzip wget
-    print_info "Done"
-
-    # Pull all necessary files
-    print_info "Downloading DoD certificates and Cackey package..."
-    wget -qP "$DWNLD_DIR" "$CERT_URL"
-    wget -qP "$DWNLD_DIR" "$CACKEY_URL"
-    print_info "Done."
-
-    # Install libcackey.
-    if [ -e "$DWNLD_DIR/$PKG_FILENAME" ]
-    then
-        print_info "Installing libcackey..."
-        if dpkg -i "$DWNLD_DIR/$PKG_FILENAME"
-        then
-            print_info "Done."
-        else
-            print_err "Installation failed. Exiting..."
-
-            exit "$E_INSTALL"
-        fi
-    fi
-
-    # Prevent cackey from upgrading.
-    # If cackey upgrades beyond 7.5, it moves libcackey.so to a different location,
-    # breaking Firefox. Returning libcackey.so to the original location does not
-    # seem to fix this issue.
-    if apt-mark hold cackey
-    then
-        print_info "Hold placed on cackey package"
-    else
-        print_err "Failed to place hold on cackey package"
-    fi
-}
-
-setup_arch() {
-    mapfile -t databases < <(find "$ORIG_HOME" -name "$DB_FILENAME" 2>/dev/null | grep "firefox\|pki" | grep -v "Trash")
-    # Check if databases were found properly
-    if [ "${#databases[@]}" -eq 0 ]
-    then
-        # Database was not found
-        print_err "No valid databases located. Try running, then closing Firefox, then start this script again."
-        echo -e "\tExiting..."
-
-        exit "$E_DATABASE"
-    fi
-
-    # Install middleware and necessary utilities
-    print_info "Installing middleware..."
-    pacman -Syu --noconfirm
-    pacman -S --noconfirm ccid opensc pcsc-tools nss unzip wget
-    print_info "Done"
-
-    # Pull all necessary files
-    print_info "Downloading DoD certificates and Cackey package..."
-    wget -qP "$DWNLD_DIR" "$CERT_URL"
-    wget -qP "$DWNLD_DIR" "$CACKEY_URL"
-    print_info "Done."
-
-
-    # Install libcackey.
-    if command -v yay >/dev/null 2>&1; then
-        print_info "Installing libcackey using yay..."
-        sudo -u "$SUDO_USER" yay -S --noconfirm cackey
-    elif command -v paru >/dev/null 2>&1; then
-        print_info "Installing libcackey using paru..."
-        sudo -u "$SUDO_USER" paru -S --noconfirm cackey
-    else
-        print_err "Neither yay nor paru is available. Please install one of them and try again."
-        exit 1
-    fi
-
-    # Check if libcackey.so is installed
-    libcackey_path=$(find /usr -name "libcackey.so" | head -n 1)
-    if [ -z "$libcackey_path" ]; then
-        print_err "libcackey.so not found after installation. Please check the installation manually."
-        exit 1
-    else
-        print_info "libcackey.so found at $libcackey_path"
-    fi
-}
 main
