@@ -34,14 +34,15 @@ distributions and versions here that I know have been tested with this method.
 On Ubuntu 22.04, Firefox will only work if you allow the script to remove the
 `snap` version and reinstall the browser with `apt`.
 
-| Distribution | Versions  | Browsers        |
-|    :-:       |    :-:    |       :-:       |
-| Ubuntu       | 20.04 LTS | Firefox, Chrome |
-|              | 22.04 LTS | Firefox, Chrome |
-| PopOS!       | 20.04 LTS | Firefox, Chrome |
-|              | 22.04 LTS | Firefox, Chrome |
-| Mint         | 21.2      | Firefox, Chrome |
-| Parrot OS    | 6.0.0-2   | Firefox, Brave  |
+| Distribution | Versions  | Browsers                  |
+|    :-:       |    :-:    |       :-:                 |
+| Debian       | 12.5      | Firefox ESR, Chrome, Edge |
+| Mint         | 21.2      | Firefox, Chrome           |
+| PopOS!       | 20.04 LTS | Firefox, Chrome           |
+|              | 22.04 LTS | Firefox, Chrome           |
+| Parrot OS    | 6.0.0-2   | Firefox, Brave            |
+| Ubuntu       | 20.04 LTS | Firefox, Chrome           |
+|              | 22.04 LTS | Firefox, Chrome           |
 
 **NOTE:** There are reports of this script working with other distributions and
 browsers. I have not personally tested these configurations.
