@@ -361,9 +361,9 @@ check_for_firefox ()
                 print_err "This version of Firefox was installed as a snap package with a launch script"
             else
                 # Run Firefox to ensure .mozilla directory has been created
-                echo -e "Running Firefox to generate profile directory..."
+                print_info "Running Firefox to generate profile directory..."
                 run_firefox
-                echo -e "\tDone."
+                print_info "Done."
             fi
         else
             print_info "Firefox not found."
@@ -432,7 +432,7 @@ import_certs ()
         done
     fi
 
-    echo "Done."
+    print_info "Done."
     echo
 } # import_certs
 
