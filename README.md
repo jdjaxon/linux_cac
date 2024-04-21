@@ -38,9 +38,9 @@ On Ubuntu 22.04, Firefox will only work if you allow the script to remove the
 |    :-:       |    :-:    |       :-:                 |
 | Debian       | 12.5      | Firefox ESR, Chrome, Edge |
 | Mint         | 21.2      | Firefox, Chrome           |
+| Parrot OS    | 6.0.0-2   | Firefox, Brave            |
 | PopOS!       | 20.04 LTS | Firefox, Chrome           |
 |              | 22.04 LTS | Firefox, Chrome           |
-| Parrot OS    | 6.0.0-2   | Firefox, Brave            |
 | Ubuntu       | 20.04 LTS | Firefox, Chrome           |
 |              | 22.04 LTS | Firefox, Chrome           |
 
