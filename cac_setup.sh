@@ -27,6 +27,7 @@ PKG_FILENAME="cackey_0.7.5-1_amd64.deb"
 CACKEY_URL="http://cackey.rkeene.org/download/0.7.5/$PKG_FILENAME"
 
 # source common functions
+# shellcheck source=sh/common.sh
 source "$CUR_DIR"/sh/common.sh
 
 # check if distribution is debian-based or arch
@@ -36,10 +37,12 @@ check_distro
 if [[ $distro == "debian" ]]; then
     # Source the Debian-specific helper script if Debian is detected
     echo "Debian-based distribution detected."
+    # shellcheck source=sh/debian_helper.sh
     source "$CUR_DIR"/sh/debian_helper.sh
 elif [[ $distro == "arch" ]]; then
     # Source the Arch-specific helper script if Arch Linux is detected
     echo "Arch Linux detected."
+    # shellcheck source=sh/arch_helper.sh
     source "$CUR_DIR"/sh/arch_helper.sh
 else
     echo "The current distribution is not supported by this script."
