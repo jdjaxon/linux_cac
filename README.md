@@ -91,6 +91,10 @@ sudo bash -c "$(fetch -o https://raw.githubusercontent.com/jdjaxon/linux_cac/mai
 ```
 
 ## Known Issues
+- The `pkcs11-register` command sometimes does not behave as expected when run
+  in a script. Users may need to reboot or run `pkcs11-register` upon the
+  completion of this setup script.
+
 - Firefox and Chrome both need to be started at least once to initialize their
   respective certificate databases/profiles.
 
