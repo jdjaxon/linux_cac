@@ -1,8 +1,14 @@
 # Linux CAC Configuration
-A project for consistently configuring DOD CACs on Linux. Currently, this
+A project for consistently configuring DoD CACs on Linux. Currently, this
 process will not work with Firefox if it is installed via `snap`. Before using
 this project, please review the [Known Issues](#known-issues) section.
 
+**NOTE:** This project has been moved away from Cackey to instead use OpenSC, which seems to be
+more stable than Cackey. If you don't use Cackey as a dependency of anything else,
+I recommend running the following:
+```
+sudo apt purge cackey
+```
 
 ## Table of Contents
 <details>
@@ -31,34 +37,32 @@ this project, please review the [Known Issues](#known-issues) section.
 
 Regardless of how similar two distributions may be, I will only list
 distributions and versions here that I know have been tested with this method.
-Ubuntu 22.04, Firefox will only work if you allow the script to remove the `snap`
-version and reinstall the browser with `apt`.
+On Ubuntu 22.04, Firefox will only work if you allow the script to remove the
+`snap` version and reinstall the browser with `apt`.
 
-| Distribution | Versions  |    Browsers     |
-|    :-:       |    :-:    |       :-:       |
-| Ubuntu       | 20.04 LTS | Firefox, Chrome |
-|              | 22.04 LTS | Firefox, Chrome |
-| PopOS!       | 20.04 LTS | Firefox, Chrome |
-|              | 22.04 LTS | Firefox, Chrome |
-| Mint         | 21.2      | Firefox, Chrome |
+| Distribution | Versions  | Browsers                  |
+|    :-:       |    :-:    |       :-:                 |
+| Debian       | 12.5      | Firefox ESR, Chrome, Edge |
+| Mint         | 21.2      | Firefox, Chrome           |
+| Parrot OS    | 6.0.0-2   | Firefox, Brave            |
+| PopOS!       | 20.04 LTS | Firefox, Chrome           |
+|              | 22.04 LTS | Firefox, Chrome           |
+| Ubuntu       | 20.04 LTS | Firefox, Chrome           |
+|              | 22.04 LTS | Firefox, Chrome           |
 
-
-
-There are reports of this script also working with both Linux Mint and the Brave
-browser, but I have not tested these configurations.
+**NOTE:** There are reports of this script working with other distributions and
+browsers. I have not personally tested these configurations.
 
 
 ## Installation
 **WARNING:** Please make sure all browsers are closed before running the script.
 
-This script requires root privileges since it installs the `cackey` package and
+This script requires root privileges since it installs `opensc` package and
 its dependencies. Feel free to review the script
 [here](https://raw.githubusercontent.com/jdjaxon/linux_cac/main/cac_setup.sh)
-if this makes you uncomfortable. For transparency, the `cackey` package is
-downloaded from
-[here](https://cackey.rkeene.org/download/0.7.5/cackey_0.7.5-1_amd64.deb) and
+if this makes you uncomfortable. For transparency, the
 the DoD certificates are downloaded from
-[here](https://militarycac.com/maccerts/AllCerts.zip), both of which are
+[here](https://militarycac.com/maccerts/AllCerts.zip), which are
 recommended by [militarycac](https://militarycac.com).
 
 **Important Notes:**
@@ -68,7 +72,6 @@ recommended by [militarycac](https://militarycac.com).
   remove <command>`.
 - The scripted installation has only been tested on the configurations listed in the
   [Supported Distributions](#supported-distributions)
-- This script uses the 64-bit version of the cackey package.
 
 
 #### Methods
@@ -88,10 +91,12 @@ sudo bash -c "$(fetch -o https://raw.githubusercontent.com/jdjaxon/linux_cac/mai
 ```
 
 ## Known Issues
+- The `pkcs11-register` command sometimes does not behave as expected when run
+  in a script. Users may need to reboot or run `pkcs11-register` upon the
+  completion of this setup script.
+
 - Firefox and Chrome both need to be started at least once to initialize their
   respective certificate databases/profiles.
-
-- CAC needs to be inserted before starting Firefox.
 
 - Ubuntu 21.10 and greater (to include the latest LTS 22.04) have Firefox
   installed via snap by default. There is an outstanding bug
@@ -100,13 +105,12 @@ sudo bash -c "$(fetch -o https://raw.githubusercontent.com/jdjaxon/linux_cac/mai
   Firefox from snap and reinstall it via `apt`. This current version of the
   script will attempt to do this reinstallation for you.
 
-- If you upgraded from 20.04 to 22.04 on either PopOS or Ubuntu, this likely
-  also upgraded the cackey package from 7.5 to the latest version, which
-  currently breaks this process. You can simply remove cackey and rerun the
-  script to resolve this.
+- Recent DoD certificates do not work with Cackey and will cause errors like
+  `ERR_SSL_CLIENT_AUTH_NO_COMMON_ALGORITHMS`. You can simply rerun the script
+  to resolve this.
 
-- If you run into any issues with firefox after running the script, clear your
-  data and history in `Privacy & Security` and then restart firefox. If your
+- If you run into any issues with Firefox after running the script, clear your
+  data and history in `Privacy & Security` and then restart Firefox. If your
   troubles are with MS Teams, see the section for [troubleshooting
   teams](#microsoft-teams). Chrome is recommended for MS Teams since Firefox
   does not currently support Teams meetings. You can see more about this
