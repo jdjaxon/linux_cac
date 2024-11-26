@@ -3,6 +3,12 @@ A project for consistently configuring DoD CACs on Linux. Currently, this
 process will not work with Firefox if it is installed via `snap`. Before using
 this project, please review the [Known Issues](#known-issues) section.
 
+**NOTE:** This project has been moved away from Cackey to instead use OpenSC, which seems to be
+more stable than Cackey. If you don't use Cackey as a dependency of anything else,
+I recommend running the following:
+```
+sudo apt purge cackey
+```
 
 ## Table of Contents
 <details>
@@ -95,7 +101,7 @@ sudo bash -c "$(fetch -o https://raw.githubusercontent.com/jdjaxon/linux_cac/mai
   Firefox from snap and reinstall it via `apt`. This current version of the
   script will attempt to do this reinstallation for you.
 
-- Recent DoD certificates do not work with cackey and will cause errors like
+- Recent DoD certificates do not work with Cackey and will cause errors like
   `ERR_SSL_CLIENT_AUTH_NO_COMMON_ALGORITHMS`. You can simply rerun the script
   to resolve this.
 
