@@ -1,14 +1,23 @@
-# Linux CAC Configuration
-A project for consistently configuring DoD CACs on Linux. Currently, this
-process will not work with Firefox if it is installed via `snap`. Before using
-this project, please review the [Known Issues](#known-issues) section.
+<h1 align="center">Linux CAC Configuration</h1>
 
-**NOTE:** This project has been moved away from Cackey to instead use OpenSC, which seems to be
-more stable than Cackey. If you don't use Cackey as a dependency of anything else,
-I recommend running the following:
-```
-sudo apt purge cackey
-```
+<p align='center'>
+  <a href="https://github.com/sponsors/jdjaxon"><img alt="Sponsor" src="https://img.shields.io/badge/sponsor-30363D?style=for-the-badge&logo=GitHub-Sponsors&logoColor=#white" /></a>
+  &nbsp;
+  <a href="#"><img alt="GitHub Repo stars" src="https://img.shields.io/github/stars/jdjaxon/linux_cac?style=for-the-badge&labelColor=30363D&color=gray" /></a>
+</p>
+
+A project for consistently configuring Debian-based Linux distributions to work with
+Common Access Cards (CACs). Currently, this process will not work with Firefox if it
+is installed via `snap`. Before using this project, please review the 
+[Known Issues](#known-issues) section.
+
+> [!note]
+> This project has moved away from Cackey to instead use OpenSC, which seems to be
+> more stable than Cackey. If you don't use Cackey as a dependency of anything else,
+> I recommend running the following:
+> ```
+> sudo apt purge cackey
+> ```
 
 ## Table of Contents
 <details>
@@ -18,17 +27,11 @@ sudo apt purge cackey
 
 1. [Supported Configurations](#supported-configurations)
 1. [Installation](#installation)
-    1. [Automated Installation](#automated-installation)
-        1. [Methods](#methods)
-    1. [Manual Installation](#manual-installation)
-        1. [Staging](#staging)
-        1. [Browser Configuration](#browser-configuration)
-            1. [Google Chrome](#google-chrome)
-            1. [Firefox](#firefox)
+   1. [Methods](#methods)
 1. [Known Issues](#known-issues)
 1. [Troubleshooting](#troubleshooting)
     1. [Microsoft Teams](#microsoft-teams)
-1. [Resources](#resources)
+1. [References](#references)
 
 </details>
 
@@ -50,12 +53,14 @@ On Ubuntu 22.04, Firefox will only work if you allow the script to remove the
 | Ubuntu       | 20.04 LTS | Firefox, Chrome           |
 |              | 22.04 LTS | Firefox, Chrome           |
 
-**NOTE:** There are reports of this script working with other distributions and
-browsers. I have not personally tested these configurations.
+> [!note]
+> There are reports of this script working with other distributions and
+> browsers. I have not personally tested these configurations.
 
 
 ## Installation
-**WARNING:** Please make sure all browsers are closed before running the script.
+> [!warning]
+>  Please make sure all browsers are closed before running the script.
 
 This script requires root privileges since it installs `opensc` package and
 its dependencies. Feel free to review the script
@@ -65,13 +70,12 @@ the DoD certificates are downloaded from
 [here](https://militarycac.com/maccerts/AllCerts.zip), which are
 recommended by [militarycac](https://militarycac.com).
 
-**Important Notes:**
-- The automated installation requires `wget` and `unzip` to run and will
-  install both during the setup, if they are not already installed. If you
-  don't want either tool, remove it after the setup is complete using `sudo apt
-  remove <command>`.
-- The scripted installation has only been tested on the configurations listed in the
-  [Supported Distributions](#supported-distributions)
+> [!note]
+> - The automated installation requires `wget` and `unzip` to run and will
+>  install both during the setup, if they are not already installed. If you don't
+>  want either tool, remove it after the setup is complete using `sudo apt remove <command>`.
+> - The scripted installation has only been tested on the configurations listed in the
+>  [Supported Configurations](#supported-configurations)
 
 
 #### Methods
@@ -125,23 +129,24 @@ If you run into issues with MS Teams, try the following steps:
 1. In the Firefox Settings window, select the `Privacy & Security` tab.
 2. Under `Cookies and Site Data`, select `Manage Exceptions`.
 3. In the `Address of website` text box, enter the following URLs, and then select `Allow`.
-```
+    ```
     https://microsoft.com
     https://microsoftonline.com
     https://teams.skype.com
     https://teams.microsoft.com
     https://sfbassets.com
     https://skypeforbusiness.com
-```
+    ```
 4. Select `Save Changes`.
 
-- **NOTE:** `strict` security settings in Firefox may cause a loading loop
+> [!note]
+> `strict` security settings in Firefox may cause a loading loop
 
 See the official documentation for this issue
 [here](https://docs.microsoft.com/en-us/microsoftteams/troubleshoot/teams-sign-in/sign-in-loop#mozilla-firefox).
 
 
-## Resources
+## References
 - https://militarycac.com/linux.htm (this was my starting point)
 - https://chromium.googlesource.com/chromium/src.git/+/refs/heads/main/docs/linux/cert_management.md
 - https://firefox-source-docs.mozilla.org/security/nss/legacy/tools/nss_tools_certutil/index.html
