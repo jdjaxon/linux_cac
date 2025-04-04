@@ -148,6 +148,49 @@ See the official documentation for this issue
 [here](https://docs.microsoft.com/en-us/microsoftteams/troubleshoot/teams-sign-in/sign-in-loop#mozilla-firefox).
 
 
+## Contributing
+Thank you for your interest in contributing to **linux_cac**! Whether you're fixing a bug, improving documentation, or adding a new feature, your help is appreciated.
+
+### How to Contribute
+1. **Fork the repository**  
+   Create your own copy of the project by clicking the "Fork" button at the top right of this page.
+
+2. **Clone your fork**  
+   ```
+   git clone https://github.com/YOUR_USERNAME/linux_cac.git
+   cd linux_cac
+   ```
+
+3. **Create a branch for your changes**  
+   ```
+   git checkout -b <your-branch-name>
+   ```
+   OR
+   ```
+   git switch -c <your-branch-name>
+   ```
+
+5. **Make your changes**  
+   Keep commits focused and meaningful. Update or add documentation if needed.
+
+6. **Test your changes**  
+   Ensure your changes don’t break existing functionality. If applicable, add tests.
+
+7. **Push to your fork and open a Pull Request**  
+   ```
+   git push origin <your-branch-name>
+   ```
+   Then, open a Pull Request on GitHub against the `main` branch of this repository.
+
+### Guidelines
+- Follow existing code style and conventions.
+- Keep changes atomic and well-documented in commit messages.
+- For larger changes or features, please open an issue first to discuss your proposal.
+
+### Need Help?
+If you run into any issues or have questions, feel free to open an issue or reach out.
+
+
 ## References
 - https://militarycac.com/linux.htm (this was my starting point)
 - https://chromium.googlesource.com/chromium/src.git/+/refs/heads/main/docs/linux/cert_management.md
