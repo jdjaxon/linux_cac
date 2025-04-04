@@ -1,9 +1,11 @@
 <h1 align="center">Linux CAC Configuration</h1>
 
 <p align='center'>
-  <a href="https://github.com/sponsors/jdjaxon"><img alt="Sponsor" src="https://img.shields.io/badge/sponsor-30363D?style=for-the-badge&logo=GitHub-Sponsors&logoColor=#white" /></a>
+  <a href="https://github.com/sponsors/jdjaxon"><img alt="Sponsor" src="https://img.shields.io/badge/sponsor-30363D?style=flat&logo=GitHub-Sponsors&logoColor=#white" /></a>
   &nbsp;
-  <a href="#"><img alt="GitHub Repo stars" src="https://img.shields.io/github/stars/jdjaxon/linux_cac?style=for-the-badge&labelColor=30363D&color=gray" /></a>
+  <a href="#"><img alt="GitHub Repo stars" src="https://img.shields.io/github/stars/jdjaxon/linux_cac?style=flat&labelColor=30363D&color=gray" /></a>
+  &nbsp;
+  <a href="#"><img alt="CI" src="https://github.com/jdjaxon/learn-cicd-starter/actions/workflows/ci.yml/badge.svg?" /></a>
 </p>
 
 A project for consistently configuring Debian-based Linux distributions to work with
@@ -12,8 +14,8 @@ is installed via `snap`. Before using this project, please review the
 [Known Issues](#known-issues) section.
 
 > [!note]
-> This project has moved away from Cackey to instead use OpenSC, which seems to be
-> more stable than Cackey. If you don't use Cackey as a dependency of anything else,
+> This project has moved from using Cackey to OpenSC, which seems to be
+> more stable. If you don't use Cackey as a dependency of anything else,
 > I recommend running the following:
 > ```
 > sudo apt purge cackey
@@ -72,7 +74,7 @@ recommended by [militarycac](https://militarycac.com).
 
 > [!note]
 > - The automated installation requires `wget` and `unzip` to run and will
->  install both during the setup, if they are not already installed. If you don't
+>  install both during the setup if they are not already installed. If you don't
 >  want either tool, remove it after the setup is complete using `sudo apt remove <command>`.
 > - The scripted installation has only been tested on the configurations listed in the
 >  [Supported Configurations](#supported-configurations)
@@ -126,9 +128,9 @@ sudo bash -c "$(fetch -o https://raw.githubusercontent.com/jdjaxon/linux_cac/mai
 ## Troubleshooting
 ### Microsoft Teams
 If you run into issues with MS Teams, try the following steps:
-1. In the Firefox Settings window, select the `Privacy & Security` tab.
-2. Under `Cookies and Site Data`, select `Manage Exceptions`.
-3. In the `Address of website` text box, enter the following URLs, and then select `Allow`.
+1. In the Firefox Settings window, select the `Privacy & Security` tab
+2. Under `Cookies and Site Data`, select `Manage Exceptions`
+3. In the `Address of website` text box, enter the following URLs, and then select `Allow`
     ```
     https://microsoft.com
     https://microsoftonline.com
@@ -137,7 +139,7 @@ If you run into issues with MS Teams, try the following steps:
     https://sfbassets.com
     https://skypeforbusiness.com
     ```
-4. Select `Save Changes`.
+4. Select `Save Changes`
 
 > [!note]
 > `strict` security settings in Firefox may cause a loading loop
