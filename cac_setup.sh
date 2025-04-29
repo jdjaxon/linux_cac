@@ -386,17 +386,17 @@ check_for_chrome ()
 } # check_for_chrome
 
 
-# Re-install the user's previous version of Firefox if the snap version was
+# Reinstall the user's previous version of Firefox if the snap version was
 # removed in the process of this script.
 revert_firefox ()
 {
-    # Firefox was replaced, lets put it back where it was.
+    # Firefox was replaced, let's put it back where it was.
     print_err "No valid databases located. Reinstalling previous version of Firefox..."
     DEBIAN_FRONTEND=noninteractive apt purge firefox -y
     snap install firefox
     run_firefox
     print_info "Completed. Exiting..."
-    # "Restore" old profile back to the snap version of Firefox
+    # "Restore" the old profile back to the snap version of Firefox
     migrate_ff_profile "restore"
 
     exit "$E_DATABASE"
@@ -439,20 +439,22 @@ import_certs ()
 # Check to see if the user has Firefox pinned to their favorites bar in GNOME
 check_for_ff_pin ()
 {
-    # firefox is a favorite and if gnome is the desktop environment.
-    if sudo -u "$SUDO_USER" bash -c "$(echo "$XDG_CURRENT_DESKTOP" | grep "GNOME" >/dev/null 2>&1)"
+    if [ -z "$XDG_CURRENT_DESKTOP" ]; then
+        print_info "Desktop environment information not available."
+        return
+    fi
+
+    if echo "$XDG_CURRENT_DESKTOP" | grep -qi "GNOME"
     then
-        print_info "Detected Gnome desktop environment"
-        if  echo "$curr_favorites" | grep "firefox.desktop" >/dev/null 2>&1
+        print_info "Detected GNOME-based desktop environment"
+        if echo "$curr_favorites" | grep -q "firefox.desktop"
         then
             ff_was_pinned=true
-        else
-            print_info "Firefox not pinned to favorites"
         fi
     else
-        print_err "Desktop environment not yet supported."
+        print_err "Unsupported desktop environment."
         print_err "Unable to repin Firefox to favorites bar"
-        print_info "Firefox can still be repinned manually"
+        print_info "Firefox can still be pinned manually"
     fi
 } # check_for_ff_pin
 
@@ -462,9 +464,8 @@ repin_firefox ()
     print_info "Attempting to repin Firefox to favorites bar..."
     if [ "$ff_was_pinned" == true ]
     then
-        # TODO: finish this
         curr_favorites=$(gsettings get org.gnome.shell favorite-apps)
-        print_info "Repinning Firefox to favorites bar"
+        print_info "Pinning Firefox to favorites bar"
         gsettings set org.gnome.shell favorite-apps "$(gsettings get org.gnome.shell favorite-apps | sed s/.$//), 'firefox.desktop']"
         print_info "Done."
     fi
