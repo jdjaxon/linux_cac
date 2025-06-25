@@ -22,7 +22,7 @@ main ()
     DB_FILENAME="cert9.db"
     CERT_FILENAME="AllCerts"
     BUNDLE_FILENAME="AllCerts.zip"
-    CERT_URL="http://militarycac.com/maccerts/$BUNDLE_FILENAME"
+    CERT_URL="https://militarycac.com/maccerts/$BUNDLE_FILENAME"
 
     root_check
     browser_check
