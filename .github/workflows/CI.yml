@@ -1,4 +1,4 @@
-name: 'Static Analysis'
+name: 'CI'
 
 on:
   workflow_call:
