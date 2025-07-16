@@ -1,4 +1,4 @@
-<h1 align="center">Linux CAC Configuration</h1>
+<h1 align="center">Linux CAC</h1>
 
 <p align='center'>
   <a href="https://github.com/sponsors/jdjaxon"><img alt="Sponsor" src="https://img.shields.io/badge/sponsor-30363D?style=flat&logo=GitHub-Sponsors&logoColor=#white" /></a>
@@ -43,7 +43,7 @@ is installed via `snap`. Before using this project, please review the
 
 Regardless of how similar two distributions may be, I will only list
 distributions and versions here that I know have been tested with this method.
-On Ubuntu 22.04, Firefox will only work if you allow the script to remove the
+Since Ubuntu 22.04, Firefox will only work if you allow the script to remove the
 `snap` version and reinstall the browser with `apt`.
 
 | Distribution | Versions  | Browsers                  |
@@ -110,7 +110,7 @@ sudo bash -c "$(fetch -o https://raw.githubusercontent.com/jdjaxon/linux_cac/mai
   (https://bugzilla.mozilla.org/show_bug.cgi?id=1734371) that prevents Firefox
   from being able to read the certificates. One solution could be to uninstall
   Firefox from snap and reinstall it via `apt`. This current version of the
-  script will attempt to do this reinstallation for you.
+  script will attempt to do the reinstallation for you.
 
 - Recent DoD certificates do not work with Cackey and will cause errors like
   `ERR_SSL_CLIENT_AUTH_NO_COMMON_ALGORITHMS`. You can simply rerun the script
