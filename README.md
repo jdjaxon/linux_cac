@@ -10,7 +10,7 @@
 
 A project for consistently configuring Debian-based Linux distributions to work with
 Common Access Cards (CACs). Currently, this process will not work with Firefox if it
-is installed via `snap`. Before using this project, please review the 
+is installed via `snap`. Before using this project, please review the
 [Known Issues](#known-issues) section.
 
 > [!note]
@@ -33,6 +33,7 @@ is installed via `snap`. Before using this project, please review the
 1. [Known Issues](#known-issues)
 1. [Troubleshooting](#troubleshooting)
     1. [Microsoft Teams](#microsoft-teams)
+1. [License](#license)
 1. [References](#references)
 
 </details>
@@ -152,16 +153,16 @@ See the official documentation for this issue
 Thank you for your interest in contributing to **linux_cac**! Whether you're fixing a bug, improving documentation, or adding a new feature, your help is appreciated.
 
 ### How to Contribute
-1. **Fork the repository**  
+1. **Fork the repository**
    Create your own copy of the project by clicking the "Fork" button at the top right of this page.
 
-2. **Clone your fork**  
+2. **Clone your fork**
    ```
    git clone https://github.com/YOUR_USERNAME/linux_cac.git
    cd linux_cac
    ```
 
-3. **Create a branch for your changes**  
+3. **Create a branch for your changes**
    ```
    git checkout -b <your-branch-name>
    ```
@@ -170,13 +171,13 @@ Thank you for your interest in contributing to **linux_cac**! Whether you're fix
    git switch -c <your-branch-name>
    ```
 
-5. **Make your changes**  
+5. **Make your changes**
    Keep commits focused and meaningful. Update or add documentation if needed.
 
-6. **Test your changes**  
+6. **Test your changes**
    Ensure your changes don’t break existing functionality. If applicable, add tests.
 
-7. **Push to your fork and open a Pull Request**  
+7. **Push to your fork and open a Pull Request**
    ```
    git push origin <your-branch-name>
    ```
@@ -189,6 +190,17 @@ Thank you for your interest in contributing to **linux_cac**! Whether you're fix
 
 ### Need Help?
 If you run into any issues or have questions, feel free to open an issue or reach out.
+
+
+## License
+This project is licensed under the MIT License.
+See the [LICENSE](./LICENSE) file for details.
+
+> [!warning]
+> This software is provided as-is without any warranty.
+> Use it at your own risk, especially in sensitive or production environments.
+> Always review scripts before running them.
+
 
 
 ## References
