@@ -5,7 +5,7 @@
   &nbsp;
   <a href="#"><img alt="GitHub Repo stars" src="https://img.shields.io/github/stars/jdjaxon/linux_cac?style=flat&labelColor=30363D&color=gray" /></a>
   &nbsp;
-  <a href="#"><img alt="CI" src="https://github.com/jdjaxon/learn-cicd-starter/actions/workflows/ci.yml/badge.svg?" /></a>
+  <a href="https://github.com/jdjaxon/linux_cac/actions/workflows/CI.yml"><img alt="CI" src="https://github.com/jdjaxon/linux_cac/actions/workflows/CI.yml/badge.svg?" /></a>
 </p>
 
 A project for consistently configuring Debian-based Linux distributions to work with
