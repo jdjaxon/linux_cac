@@ -92,11 +92,6 @@ sudo bash -c "$(wget https://raw.githubusercontent.com/jdjaxon/linux_cac/main/ca
 sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/jdjaxon/linux_cac/main/cac_setup.sh)"
 ```
 
-- `fetch`
-```bash
-sudo bash -c "$(fetch -o https://raw.githubusercontent.com/jdjaxon/linux_cac/main/cac_setup.sh)"
-```
-
 ## Known Issues
 - The `pkcs11-register` command sometimes does not behave as expected when run
   in a script. Users may need to reboot or run `pkcs11-register` upon the
