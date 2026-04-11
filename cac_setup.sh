@@ -9,12 +9,14 @@ main ()
     E_NOTROOT=86                        # Non-root exit error
     E_BROWSER=87                        # Compatible browser not found
     E_DATABASE=88                       # No database located
+    E_DISTRO=89                         # Unsupported Linux distribution
     DWNLD_DIR="/tmp"                    # Location to place artifacts
     FF_PROFILE_NAME="old_ff_profile"    # Location to save old Firefox profile
 
     chrome_exists=false                 # Google Chrome is installed
     ff_exists=false                     # Firefox is installed
     snap_ff=false                       # Flag to prompt for how to handle snap Firefox
+    OS_FAMILY=""                        # Detected OS family (debian/fedora/arch)
 
     ORIG_HOME="$(getent passwd "$SUDO_USER" | cut -d: -f6)"
     CERT_EXTENSION="cer"
@@ -24,9 +26,18 @@ main ()
     BUNDLE_FILENAME="AllCerts.zip"
     CERT_URL="https://militarycac.com/maccerts/$BUNDLE_FILENAME"
 
+    detect_os
     root_check
     browser_check
-    mapfile -t databases < <(find "$ORIG_HOME" -name "$DB_FILENAME" 2>/dev/null | grep "firefox\|pki" | grep -v "Trash\|snap")
+
+    # Exclude snap paths only on Debian-family systems
+    if [ "$OS_FAMILY" == "debian" ]
+    then
+        mapfile -t databases < <(find "$ORIG_HOME" -name "$DB_FILENAME" 2>/dev/null | grep "firefox\|pki" | grep -v "Trash\|snap")
+    else
+        mapfile -t databases < <(find "$ORIG_HOME" -name "$DB_FILENAME" 2>/dev/null | grep "firefox\|pki" | grep -v "Trash")
+    fi
+
     # Check if databases were found properly
     if [ "${#databases[@]}" -eq 0 ]
     then
@@ -53,8 +64,7 @@ main ()
 
     # Install middleware and necessary utilities
     print_info "Installing middleware and essential utilities..."
-    apt update
-    DEBIAN_FRONTEND=noninteractive apt install -y libpcsclite1 pcscd libccid libpcsc-perl pcsc-tools libnss3-tools unzip wget opensc
+    install_packages
     print_info "Done"
 
     # Pull all necessary files
@@ -78,9 +88,7 @@ main ()
         fi
     done
 
-    print_info "Registering CAC module with PKSC11..."
-    pkcs11-register
-    print_info "Done"
+    register_pkcs11
 
     # NOTE: Keeping this temporarily to test `pkcs11-register`.
     # if ! grep -Pzo 'library=/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so\nname=CAC Module\n' "$db_root/$PKCS_FILENAME" >/dev/null
@@ -90,6 +98,10 @@ main ()
 
     print_info "Enabling pcscd service to start on boot..."
     systemctl enable pcscd.socket
+    if [ "$OS_FAMILY" != "debian" ]
+    then
+        systemctl start pcscd.socket
+    fi
     print_info "Done"
 
     # Remove artifacts
@@ -343,13 +355,15 @@ migrate_ff_profile ()
 
 
 # Attempt to find an installed version of Firefox on the user's system
-# Determines whether the version is installed via snap or apt
+# Determines whether the version is installed via snap or apt (Debian family only)
 check_for_firefox ()
 {
     if command -v firefox >/dev/null
+    then
+        ff_exists=true
+        print_info "Found Firefox."
+        if [ "$OS_FAMILY" == "debian" ]
         then
-            ff_exists=true
-            print_info "Found Firefox."
             if command -v firefox | grep snap >/dev/null
             then
                 snap_ff=true
@@ -365,8 +379,14 @@ check_for_firefox ()
                 print_info "Done."
             fi
         else
-            print_info "Firefox not found."
+            # Run Firefox to ensure .mozilla directory has been created
+            print_info "Running Firefox to generate profile directory..."
+            run_firefox
+            print_info "Done."
         fi
+    else
+        print_info "Firefox not found."
+    fi
 } # check_for_firefox
 
 
@@ -470,6 +490,82 @@ repin_firefox ()
         print_info "Done."
     fi
 } # repin_firefox
+
+
+# Detect the Linux distribution family and set OS_FAMILY accordingly
+detect_os ()
+{
+    if [ ! -f /etc/os-release ]
+    then
+        print_err "Cannot detect Linux distribution. /etc/os-release not found."
+        exit 1
+    fi
+
+    # shellcheck source=/dev/null
+    . /etc/os-release
+
+    local distro_id="${ID:-}"
+    local distro_like="${ID_LIKE:-}"
+
+    if echo "$distro_id $distro_like" | grep -qi "debian\|ubuntu"
+    then
+        OS_FAMILY="debian"
+    elif echo "$distro_id $distro_like" | grep -qi "fedora\|rhel\|centos"
+    then
+        OS_FAMILY="fedora"
+    elif echo "$distro_id $distro_like" | grep -qi "arch"
+    then
+        OS_FAMILY="arch"
+    else
+        print_err "Unsupported Linux distribution: ${PRETTY_NAME:-$distro_id}"
+        print_info "Supported distributions: Debian/Ubuntu, Fedora, Arch Linux"
+        exit "$E_DISTRO"
+    fi
+
+    print_info "Detected OS: ${PRETTY_NAME:-$distro_id} (family: $OS_FAMILY)"
+} # detect_os
+
+
+# Install middleware packages using the appropriate package manager
+install_packages ()
+{
+    case "$OS_FAMILY" in
+        debian)
+            apt update
+            DEBIAN_FRONTEND=noninteractive apt install -y libpcsclite1 pcscd libccid libpcsc-perl pcsc-tools libnss3-tools unzip wget opensc
+            ;;
+        fedora)
+            dnf install -y pcsc-lite pcsc-lite-ccid opensc nss-tools unzip wget pcsc-tools
+            ;;
+        arch)
+            pacman -Sy --noconfirm pcsclite ccid opensc nss unzip wget pcsc-tools
+            ;;
+    esac
+} # install_packages
+
+
+# Register the CAC PKCS11 module using the appropriate method for the OS family
+register_pkcs11 ()
+{
+    case "$OS_FAMILY" in
+        debian)
+            print_info "Registering CAC module with PKCS11..."
+            pkcs11-register
+            print_info "Done"
+            ;;
+        fedora|arch)
+            print_info "Verifying PKCS11 module registration..."
+            # OpenSC module is automatically registered via p11-kit on Fedora and Arch
+            if p11-kit list-modules | grep -q opensc
+            then
+                print_info "OpenSC PKCS11 module is properly registered"
+            else
+                print_err "OpenSC PKCS11 module not found. You may need to reinstall opensc package."
+            fi
+            print_info "Done"
+            ;;
+    esac
+} # register_pkcs11
 
 
 main
