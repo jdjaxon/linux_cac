@@ -358,17 +358,19 @@ migrate_ff_profile ()
 # Determines whether the version is installed via snap or apt (Debian family only)
 check_for_firefox ()
 {
-    if command -v firefox >/dev/null
+    local ff_path
+    ff_path="$(command -v firefox)"
+    if [ -n "$ff_path" ]
     then
         ff_exists=true
         print_info "Found Firefox."
         if [ "$OS_FAMILY" == "debian" ]
         then
-            if command -v firefox | grep snap >/dev/null
+            if echo "$ff_path" | grep snap >/dev/null
             then
                 snap_ff=true
                 print_err "This version of Firefox was installed as a snap package"
-            elif command -v firefox | xargs grep -Fq "exec /snap/bin/firefox"
+            elif grep -Fq "exec /snap/bin/firefox" "$ff_path"
             then
                 snap_ff=true
                 print_err "This version of Firefox was installed as a snap package with a launch script"
@@ -498,7 +500,7 @@ detect_os ()
     if [ ! -f /etc/os-release ]
     then
         print_err "Cannot detect Linux distribution. /etc/os-release not found."
-        exit 1
+        exit "$E_DISTRO"
     fi
 
     # shellcheck source=/dev/null
@@ -506,14 +508,15 @@ detect_os ()
 
     local distro_id="${ID:-}"
     local distro_like="${ID_LIKE:-}"
+    local distro_info="$distro_id $distro_like"
 
-    if echo "$distro_id $distro_like" | grep -qi "debian\|ubuntu"
+    if echo "$distro_info" | grep -qi "debian\|ubuntu"
     then
         OS_FAMILY="debian"
-    elif echo "$distro_id $distro_like" | grep -qi "fedora\|rhel\|centos"
+    elif echo "$distro_info" | grep -qi "fedora\|rhel\|centos"
     then
         OS_FAMILY="fedora"
-    elif echo "$distro_id $distro_like" | grep -qi "arch"
+    elif echo "$distro_info" | grep -qi "arch"
     then
         OS_FAMILY="arch"
     else
