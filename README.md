@@ -100,13 +100,6 @@ sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/jdjaxon/linux_cac/m
 - Firefox and Chrome both need to be started at least once to initialize their
   respective certificate databases/profiles.
 
-- Ubuntu 21.10 and greater (to include the latest LTS 22.04) have Firefox
-  installed via snap by default. There is an outstanding bug
-  (https://bugzilla.mozilla.org/show_bug.cgi?id=1734371) that prevents Firefox
-  from being able to read the certificates. One solution could be to uninstall
-  Firefox from snap and reinstall it via `apt`. This current version of the
-  script will attempt to do the reinstallation for you.
-
 - Recent DoD certificates do not work with Cackey and will cause errors like
   `ERR_SSL_CLIENT_AUTH_NO_COMMON_ALGORITHMS`. You can simply rerun the script
   to resolve this.
