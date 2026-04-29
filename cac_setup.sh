@@ -71,15 +71,14 @@ main ()
     if [ "$snap_ff" == true ]
     then
         print_info "Connecting snapped Firefox to the pcscd socket..."
-        snap connect firefox:pcscd
-        if [ $? -ne 0 ]
+        if ! snap connect firefox:pcscd
         then
             print_err "Failed to connect. Try upgrading with 'apt upgrade' and 'snap refresh' first."
             exit "$E_BROWSER"
         fi
 
         print_info "Registering the pkcs11 module..."
-        sudo -H -u "$SUDO_USER" modutil -dbdir sql:$ff_profile_dir \
+        sudo -H -u "$SUDO_USER" modutil -dbdir "sql:$ff_profile_dir" \
             -add "CAC Module" -libfile /usr/lib/x86_64-linux-gnu/opensc-pkcs11.so -force
     else
         print_info "Registering CAC module with PKSC11..."
@@ -267,42 +266,6 @@ import_certs ()
     print_info "Done."
     echo
 } # import_certs
-
-
-# Check to see if the user has Firefox pinned to their favorites bar in GNOME
-check_for_ff_pin ()
-{
-    if [ -z "$XDG_CURRENT_DESKTOP" ]; then
-        print_info "Desktop environment information not available."
-        return
-    fi
-
-    if echo "$XDG_CURRENT_DESKTOP" | grep -qi "GNOME"
-    then
-        print_info "Detected GNOME-based desktop environment"
-        if echo "$curr_favorites" | grep -q "firefox.desktop"
-        then
-            ff_was_pinned=true
-        fi
-    else
-        print_err "Unsupported desktop environment."
-        print_err "Unable to repin Firefox to favorites bar"
-        print_info "Firefox can still be pinned manually"
-    fi
-} # check_for_ff_pin
-
-
-repin_firefox ()
-{
-    print_info "Attempting to repin Firefox to favorites bar..."
-    if [ "$ff_was_pinned" == true ]
-    then
-        curr_favorites=$(gsettings get org.gnome.shell favorite-apps)
-        print_info "Pinning Firefox to favorites bar"
-        gsettings set org.gnome.shell favorite-apps "$(gsettings get org.gnome.shell favorite-apps | sed s/.$//), 'firefox.desktop']"
-        print_info "Done."
-    fi
-} # repin_firefox
 
 
 main
