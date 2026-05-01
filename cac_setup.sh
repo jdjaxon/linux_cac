@@ -7,14 +7,14 @@ main ()
 {
     EXIT_SUCCESS=0                      # Success exit code
     E_NOTROOT=86                        # Non-root exit error
-    E_BROWSER=87                        # Compatible browser not found
+    E_BROWSER=87                        # Browser-related error (e.g. no browser installed)
     E_DATABASE=88                       # No database located
     DWNLD_DIR="/tmp"                    # Location to place artifacts
-    FF_PROFILE_NAME="old_ff_profile"    # Location to save old Firefox profile
 
     chrome_exists=false                 # Google Chrome is installed
     ff_exists=false                     # Firefox is installed
-    snap_ff=false                       # Flag to prompt for how to handle snap Firefox
+    snap_ff=false                       # Snapped Firefox
+    ff_profile_dir=""                   # Firefox profile directory
 
     ORIG_HOME="$(getent passwd "$SUDO_USER" | cut -d: -f6)"
     CERT_EXTENSION="cer"
@@ -26,29 +26,14 @@ main ()
 
     root_check
     browser_check
-    mapfile -t databases < <(find "$ORIG_HOME" -name "$DB_FILENAME" 2>/dev/null | grep "firefox\|pki" | grep -v "Trash\|snap")
+    mapfile -t databases < <(find "$ORIG_HOME" -name "$DB_FILENAME" 2>/dev/null | grep "firefox\|pki" | grep -v "Trash")
     # Check if databases were found properly
     if [ "${#databases[@]}" -eq 0 ]
     then
-        # Database was not found
-        if [ "$snap_ff" == true ]
-        then
-            revert_firefox
-        else
-            # Firefox was not replaced, exit with E_DATABASE error
-            print_err "No valid databases located. Try running, then closing Firefox, then start this script again."
-            echo -e "\tExiting..."
+        print_err "No valid databases located. Try running, then closing Firefox, then start this script again."
+        echo -e "\tExiting..."
 
-            exit "$E_DATABASE"
-        fi
-    else
-        # Database was found. (Good)
-        if [ "$snap_ff" == true ]
-        then
-            # Database was found, meaning snap firefox was replaced with apt version
-            # This conditional branch may not be needed at all... Note: Remove if not needed
-            snap_ff=false
-        fi
+        exit "$E_DATABASE"
     fi
 
     # Install middleware and necessary utilities
@@ -78,23 +63,39 @@ main ()
         fi
     done
 
-    print_info "Registering CAC module with PKSC11..."
-    pkcs11-register
-    print_info "Done"
-
-    # NOTE: Keeping this temporarily to test `pkcs11-register`.
-    # if ! grep -Pzo 'library=/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so\nname=CAC Module\n' "$db_root/$PKCS_FILENAME" >/dev/null
-    # then
-    #     printf "library=/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so\nname=CAC Module\n" >> "$db_root/$PKCS_FILENAME"
-    # fi
-
     print_info "Enabling pcscd service to start on boot..."
     systemctl enable pcscd.socket
     print_info "Done"
 
+    # Handle snapped firefox
+    if [ "$snap_ff" == true ]
+    then
+        print_info "Connecting snapped Firefox to the pcscd socket..."
+        if ! snap connect firefox:pcscd
+        then
+            print_err "Failed to connect. Try upgrading with 'apt upgrade' and 'snap refresh' first."
+            exit "$E_BROWSER"
+        fi
+
+        print_info "Registering the pkcs11 module..."
+        sudo -H -u "$SUDO_USER" modutil -dbdir "sql:$ff_profile_dir" \
+            -add "CAC Module" -libfile /usr/lib/x86_64-linux-gnu/opensc-pkcs11.so -force
+    else
+        print_info "Registering CAC module with PKSC11..."
+        pkcs11-register
+        print_info "Done"
+
+        # NOTE: Keeping this temporarily to test `pkcs11-register`.
+        # if ! grep -Pzo 'library=/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so\nname=CAC Module\n' "$db_root/$PKCS_FILENAME" >/dev/null
+        # then
+        #     printf "library=/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so\nname=CAC Module\n" >> "$db_root/$PKCS_FILENAME"
+        # fi
+    fi
+
+
     # Remove artifacts
     print_info "Removing artifacts..."
-    rm -rf "${DWNLD_DIR:?}"/{"$BUNDLE_FILENAME","$CERT_FILENAME","$FF_PROFILE_NAME"} 2>/dev/null
+    rm -rf "${DWNLD_DIR:?}"/{"$BUNDLE_FILENAME","$CERT_FILENAME"} 2>/dev/null
     if [ "$?" -ne "$EXIT_SUCCESS" ]
     then
         print_err "Failed to remove artifacts. Artifacts were stored in ${DWNLD_DIR}."
@@ -139,45 +140,6 @@ root_check ()
 } # root_check
 
 
-# Replace the current snap version of Firefox with the compatible apt version of Firefox
-reconfigure_firefox ()
-{
-    # Replace snap Firefox with version from PPA maintained via Mozilla
-    check_for_ff_pin
-    #Profile migration
-    backup_ff_profile
-    print_info "Removing Snap version of Firefox"
-    snap remove --purge firefox
-    print_info "Adding PPA for Mozilla maintained Firefox"
-    add-apt-repository -y ppa:mozillateam/ppa
-    print_info "Setting priority to prefer Mozilla PPA over snap package"
-    echo -e "Package: *\nPin: release o=LP-PPA-mozillateam\nPin-Priority: 1001" > /etc/apt/preferences.d/mozilla-firefox
-    print_info "Enabling updates for future Firefox releases"
-    # shellcheck disable=SC2016
-    echo -e 'Unattended-Upgrade::Allowed-Origins:: "LP-PPA-mozillateam:${distro_codename}";' > /etc/apt/apt.conf.d/51unattended-upgrades-firefox
-    print_info "Installing Firefox via apt"
-    DEBIAN_FRONTEND=noninteractive apt install -y --allow-downgrades firefox
-    print_info "Completed re-installation of Firefox"
-
-    # Forget the previous location of firefox executable
-    if hash firefox
-    then
-        hash -d firefox
-    fi
-
-    run_firefox
-    print_info "Finished, closing Firefox."
-
-    if [ "$backup_exists" == true ]
-    then
-        print_info "Migrating user profile into newly installed Firefox"
-        migrate_ff_profile "migrate"
-    fi
-
-    repin_firefox
-} # reconfigure_firefox
-
-
 # Run Firefox to ensure the profile directory has been created
 run_firefox ()
 {
@@ -220,126 +182,8 @@ browser_check ()
         print_err "No version of Mozilla Firefox OR Google Chrome has been detected."
         print_info "Please install either or both to proceed."
         exit "$E_BROWSER"
-    elif [ "$ff_exists" == true ] # Firefox was found
-    then
-        if [ "$snap_ff" == true ] # Snap version of Firefox
-        then
-            echo -e "
-            ********************${ERR_COLOR}[ WARNING ]${NO_COLOR}********************
-            * The version of Firefox you have installed       *
-            * currently was installed via snap.               *
-            * This version of Firefox is not currently        *
-            * compatible with the method used to enable CAC   *
-            * support in browsers.                            *
-            *                                                 *
-            * As a work-around, this script can automatically *
-            * remove the snap version and reinstall via apt.  *
-            *                                                 *
-            * The option to attempt to migrate all of your    *
-            * personalizations will be given if you choose to *
-            * replace Firefox via this script. Your Firefox   *
-            * profile will be saved to a temp location, then  *
-            * will overwrite the default profile once the apt *
-            * version of Firefox has been installed.          *
-            *                                                 *
-            ********************${ERR_COLOR}[ WARNING ]${NO_COLOR}********************\n"
-
-            # Prompt user to elect to replace snap firefox with apt firefox
-            choice=''
-            while [ "$choice" != "y" ] && [ "$choice" != "n" ]
-            do
-                echo -e "\nWould you like to switch to the apt version of Firefox? ${INFO_COLOR}(y/n)${NO_COLOR}"
-                read -rp '> ' choice
-            done
-
-            if [ "$choice" == "y" ]
-            then
-                reconfigure_firefox
-            else
-                if [ $chrome_exists == false ]
-                then
-                    print_info "You have elected to keep the snap version of Firefox.\n"
-                    print_err "You have no compatible browsers. Exiting..."
-                    exit $E_BROWSER
-                fi
-            fi
-        fi
     fi
 } # browser_check
-
-
-# Locate and backup the profile for the user's snap version of Firefox
-# Backup is placed in /tmp/ff_old_profile/ and can be restored after the
-# apt version of Firefox has been installed
-backup_ff_profile ()
-{
-    location="$(find "$ORIG_HOME" -name "$DB_FILENAME" 2>/dev/null | grep "firefox" | grep -v "Trash" | grep snap)"
-    if [ -z "$location" ]
-    then
-        print_info "No user profile was found in snap-installed version of Firefox."
-    else
-        # A user profile exists in the snap version of FF
-        choice=''
-        while [ "$choice" != "y" ] && [ "$choice" != "n" ]
-        do
-            echo -e "\nWould you like to transfer your bookmarks and personalizations to the new version of Firefox? ${INFO_COLOR}(y/n)${NO_COLOR}"
-            read -rp '> ' choice
-        done
-
-        if [ "$choice" == "y" ]
-        then
-            print_info "Backing up Firefox profile"
-            ff_profile="$(dirname "$location")"
-            sudo -H -u "$SUDO_USER" cp -rf "$ff_profile" "$DWNLD_DIR/$FF_PROFILE_NAME"
-            backup_exists=1
-        fi
-
-    fi
-} # backup_ff_profile
-
-
-# Moves the user's backed up Firefox profile from the temp location to the newly
-# installed apt version of Firefox in the ~/.mozilla directory
-# TODO: Take arguments for source and destination so profile can be restored to
-#       original location in the event of a failed install
-migrate_ff_profile ()
-{
-    direction=$1
-
-    if [ "$direction" == "migrate" ]
-    then
-        apt_ff_profile="$(find "$ORIG_HOME" -name "$DB_FILENAME" 2>/dev/null | grep "firefox" | grep -v "Trash" | grep -v snap)"
-        if [ -z "$apt_ff_profile" ]
-        then
-            print_err "Something went wrong while trying to find apt Firefox's user profile directory."
-            exit "$E_DATABASE"
-        else
-            ff_profile_dir="$(dirname "$apt_ff_profile")"
-            if sudo -H -u "$SUDO_USER" cp -rf "$DWNLD_DIR/$FF_PROFILE_NAME"/* "$ff_profile_dir"
-            then
-                print_info "Successfully migrated user profile for Firefox versions"
-            else
-                print_err "Unable to migrate Firefox profile"
-            fi
-        fi
-    elif [ "$direction" == "restore" ]
-    then
-        location="$(find "$ORIG_HOME" -name "$DB_FILENAME" 2>/dev/null | grep "firefox" | grep -v "Trash" | grep snap)"
-        if [ -z "$location" ]
-        then
-            print_info "No user profile was found in snap-installed version of Firefox."
-        else
-            ff_profile_dir="$(dirname "$apt_ff_profile")"
-            if sudo -H -u "$SUDO_USER" cp -rf "$DWNLD_DIR/$FF_PROFILE_NAME"/* "$ff_profile_dir"
-            then
-                print_info "Successfully restored user profile for Firefox"
-            else
-                print_err "Unable to migrate Firefox profile"
-            fi
-        fi
-    fi
-
-} # migrate_ff_profile
 
 
 # Attempt to find an installed version of Firefox on the user's system
@@ -348,21 +192,26 @@ check_for_firefox ()
 {
     if command -v firefox >/dev/null
         then
+            # Run Firefox to ensure .mozilla directory has been created
+            print_info "Running Firefox to generate profile directory..."
+            run_firefox
+            print_info "Done."
+
             ff_exists=true
-            print_info "Found Firefox."
+            db_location="$(find "$ORIG_HOME" -name "$DB_FILENAME" 2>/dev/null | grep "firefox" | grep -v "Trash")"
+            ff_profile_dir="$(dirname "$db_location")"
+            print_info "Found Firefox with profile in ${ff_profile_dir}"
+
             if command -v firefox | grep snap >/dev/null
             then
                 snap_ff=true
-                print_err "This version of Firefox was installed as a snap package"
+                print_info "This version of Firefox was installed as a snap package"
             elif command -v firefox | xargs grep -Fq "exec /snap/bin/firefox"
             then
                 snap_ff=true
-                print_err "This version of Firefox was installed as a snap package with a launch script"
+                print_info "This version of Firefox was installed as a snap package with a launch script"
             else
-                # Run Firefox to ensure .mozilla directory has been created
-                print_info "Running Firefox to generate profile directory..."
-                run_firefox
-                print_info "Done."
+                print_info "This is not a snap-installed version of Firefox."
             fi
         else
             print_info "Firefox not found."
@@ -384,23 +233,6 @@ check_for_chrome ()
         print_info "Chrome not found."
     fi
 } # check_for_chrome
-
-
-# Reinstall the user's previous version of Firefox if the snap version was
-# removed in the process of this script.
-revert_firefox ()
-{
-    # Firefox was replaced, let's put it back where it was.
-    print_err "No valid databases located. Reinstalling previous version of Firefox..."
-    DEBIAN_FRONTEND=noninteractive apt purge firefox -y
-    snap install firefox
-    run_firefox
-    print_info "Completed. Exiting..."
-    # "Restore" the old profile back to the snap version of Firefox
-    migrate_ff_profile "restore"
-
-    exit "$E_DATABASE"
-} # revert_firefox
 
 
 # Integrate all certificates into the databases for existing browsers
@@ -434,42 +266,6 @@ import_certs ()
     print_info "Done."
     echo
 } # import_certs
-
-
-# Check to see if the user has Firefox pinned to their favorites bar in GNOME
-check_for_ff_pin ()
-{
-    if [ -z "$XDG_CURRENT_DESKTOP" ]; then
-        print_info "Desktop environment information not available."
-        return
-    fi
-
-    if echo "$XDG_CURRENT_DESKTOP" | grep -qi "GNOME"
-    then
-        print_info "Detected GNOME-based desktop environment"
-        if echo "$curr_favorites" | grep -q "firefox.desktop"
-        then
-            ff_was_pinned=true
-        fi
-    else
-        print_err "Unsupported desktop environment."
-        print_err "Unable to repin Firefox to favorites bar"
-        print_info "Firefox can still be pinned manually"
-    fi
-} # check_for_ff_pin
-
-
-repin_firefox ()
-{
-    print_info "Attempting to repin Firefox to favorites bar..."
-    if [ "$ff_was_pinned" == true ]
-    then
-        curr_favorites=$(gsettings get org.gnome.shell favorite-apps)
-        print_info "Pinning Firefox to favorites bar"
-        gsettings set org.gnome.shell favorite-apps "$(gsettings get org.gnome.shell favorite-apps | sed s/.$//), 'firefox.desktop']"
-        print_info "Done."
-    fi
-} # repin_firefox
 
 
 main
