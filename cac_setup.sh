@@ -38,8 +38,8 @@ main ()
 
     # Install middleware and necessary utilities
     print_info "Installing middleware and essential utilities..."
-    apt update
-    DEBIAN_FRONTEND=noninteractive apt install -y libpcsclite1 pcscd libccid libpcsc-perl pcsc-tools libnss3-tools unzip wget opensc
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y libpcsclite1 pcscd libccid libpcsc-perl pcsc-tools libnss3-tools unzip wget opensc
     print_info "Done"
 
     # Pull all necessary files
@@ -82,7 +82,7 @@ main ()
             -add "CAC Module" -libfile /usr/lib/x86_64-linux-gnu/opensc-pkcs11.so -force
     else
         print_info "Registering CAC module with PKSC11..."
-        pkcs11-register
+        sudo -H -u "$SUDO_USER" pkcs11-register --skip-firefox=off
         print_info "Done"
 
         # NOTE: Keeping this temporarily to test `pkcs11-register`.
