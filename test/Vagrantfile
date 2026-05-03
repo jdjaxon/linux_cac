@@ -1,0 +1,62 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+  # expose repo root to the VMs
+  config.vm.synced_folder "..", "/vagrant_root"
+
+  DISTROS = {
+    "ubuntu2404" => {
+      box: "cloud-image/ubuntu-24.04",
+      box_version: "20260323.0.0",
+      pre_setup: <<~SHELL
+        snap install firefox
+      SHELL
+    },
+
+    "debian13" => {
+      box: "cloud-image/debian-13",
+      box_version: "20260413.2447.0",
+      pre_setup: <<~SHELL
+        apt-get install -qy firefox-esr
+      SHELL
+    }
+  }
+
+  DISTROS.each do |name, cfg|
+    config.vm.define name do |node|
+      node.vm.box = cfg[:box]
+      node.vm.box_version = cfg[:box_version]
+
+      node.vm.cloud_init do |cloud_init|
+        cloud_init.content_type = "text/cloud-config"
+        cloud_init.inline = <<-EOF
+          timezone: America/New_York
+          package_update: true
+          packages:
+            - bats
+        EOF
+      end
+
+      node.vm.provider :virtualbox do |vb|
+        vb.memory = "2048"
+        vb.cpus   = 2
+        vb.name   = "linux_cac_#{name}"
+      end
+
+      # 1: install browsers
+      node.vm.provision "pre_setup", type: "shell", inline: cfg[:pre_setup]
+
+      # 2: run cac_setup.sh
+      node.vm.provision "cac_setup", type: "shell", inline: <<~SHELL
+        SUDO_USER=vagrant bash /vagrant_root/cac_setup.sh
+        echo $? > /tmp/cac_setup_exit_code
+      SHELL
+
+      # 3: run the tests
+      node.vm.provision "test", type: "shell", inline: <<~SHELL
+        bats /vagrant_root/test/test.bats
+      SHELL
+    end
+  end
+end
