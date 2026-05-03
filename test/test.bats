@@ -13,6 +13,10 @@ ff_profile() {
     | head -1 | xargs -I{} dirname {}
 }
 
+chrome_profile() {
+  echo "/home/vagrant/.local/share/pki/nssdb"
+}
+
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
@@ -42,9 +46,7 @@ ff_profile() {
   run modutil -dbdir sql:${profile} -list 2>&1
   [ "$status" -eq 0 ]
 
-  # Snap path:     "CAC Module"
-  # Non-snap path: "OpenSC smartcard framework" (name set by pkcs11-register)
-  echo "$output" | grep -qi "CAC Module\|OpenSC"
+  echo "$output" | grep -qi "CAC Module"
 }
 
 @test "DoD certificates imported into Firefox profile" {
@@ -54,5 +56,17 @@ ff_profile() {
 
   cert_count=$(certutil -d "sql:${profile}" -L 2>/dev/null | grep -c '\.cer' || echo 0)
   # arbitrary number
+  [ "$cert_count" -gt 10 ]
+}
+
+@test "PKCS11 module registered in Chrome" {
+  run modutil -dbdir "sql:$(chrome_profile)" -list 2>&1
+  [ "$status" -eq 0 ]
+  echo "$output" | grep -qi "CAC Module"
+}
+
+@test "DoD certificates imported into Chrome profile" {
+  local cert_count
+  cert_count=$(certutil -d "sql:$(chrome_profile)" -L 2>/dev/null | grep -c '\.cer' || echo 0)
   [ "$cert_count" -gt 10 ]
 }

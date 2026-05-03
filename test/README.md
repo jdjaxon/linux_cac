@@ -15,6 +15,7 @@ distribution versions.
 - vagrant
 - virtualbox (other backends, e.g. QEMU, are possible but would require changes
   to the `Vagrantfile`)
+- `genisoimage` or whichever package provides `mkisofs`
 - web connectivity
 
 ## Usage

@@ -11,6 +11,8 @@ Vagrant.configure("2") do |config|
       box_version: "20260323.0.0",
       pre_setup: <<~SHELL
         snap install firefox
+        wget -qO /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+        apt-get install -y /tmp/chrome.deb
       SHELL
     },
 
@@ -19,6 +21,8 @@ Vagrant.configure("2") do |config|
       box_version: "20260413.2447.0",
       pre_setup: <<~SHELL
         apt-get install -qy firefox-esr
+        wget -qO /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+        apt-get install -y /tmp/chrome.deb
       SHELL
     }
   }
