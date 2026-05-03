@@ -18,7 +18,6 @@ main ()
 
     ORIG_HOME="$(getent passwd "$SUDO_USER" | cut -d: -f6)"
     CERT_EXTENSION="cer"
-    # PKCS_FILENAME="pkcs11.txt"
     DB_FILENAME="cert9.db"
     CERT_FILENAME="AllCerts"
     BUNDLE_FILENAME="AllCerts.zip"
@@ -67,7 +66,7 @@ main ()
     systemctl enable pcscd.socket
     print_info "Done"
 
-    # Handle snapped firefox
+    # Connect snapped Firefox to the pcscd socket
     if [ "$snap_ff" == true ]
     then
         print_info "Connecting snapped Firefox to the pcscd socket..."
@@ -76,20 +75,21 @@ main ()
             print_err "Failed to connect. Try upgrading with 'apt upgrade' and 'snap refresh' first."
             exit "$E_BROWSER"
         fi
+    fi
 
-        print_info "Registering the pkcs11 module..."
-        sudo -H -u "$SUDO_USER" modutil -dbdir "sql:$ff_profile_dir" \
-            -add "CAC Module" -libfile /usr/lib/x86_64-linux-gnu/opensc-pkcs11.so -force
+    # Register the PKCS11 module in every detected NSS database (Firefox + Chrome)
+    opensc_lib=$(find_opensc_pkcs11)
+    if [ -z "$opensc_lib" ]
+    then
+        print_err "Could not locate opensc-pkcs11.so; skipping PKCS11 module registration."
     else
-        print_info "Registering CAC module with PKSC11..."
-        sudo -H -u "$SUDO_USER" pkcs11-register --skip-firefox=off
-        print_info "Done"
-
-        # NOTE: Keeping this temporarily to test `pkcs11-register`.
-        # if ! grep -Pzo 'library=/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so\nname=CAC Module\n' "$db_root/$PKCS_FILENAME" >/dev/null
-        # then
-        #     printf "library=/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so\nname=CAC Module\n" >> "$db_root/$PKCS_FILENAME"
-        # fi
+        for db in "${databases[@]}"
+        do
+            if [ -n "$db" ]
+            then
+                register_pkcs11_module "$(dirname "$db")" "$opensc_lib"
+            fi
+        done
     fi
 
 
@@ -266,6 +266,31 @@ import_certs ()
     print_info "Done."
     echo
 } # import_certs
+
+
+# Locate opensc-pkcs11.so on the system
+find_opensc_pkcs11 ()
+{
+    local lib_path
+    lib_path=$(dpkg -L opensc 2>/dev/null | grep 'opensc-pkcs11\.so$' | head -1)
+    if [ -z "$lib_path" ]
+    then
+        # potential for non-debian-based systems
+        lib_path=$(find /usr/lib /usr/local/lib -name 'opensc-pkcs11.so' 2>/dev/null | head -1)
+    fi
+    echo "$lib_path"
+} # find_opensc_pkcs11
+
+
+# Register opensc-pkcs11.so as a PKCS11 module in a single NSS database dir.
+register_pkcs11_module ()
+{
+    local db_dir="$1"
+    local lib_path="$2"
+    print_info "Registering PKCS11 module in ${db_dir}..."
+    sudo -H -u "$SUDO_USER" modutil -dbdir "sql:${db_dir}" \
+        -add "CAC Module" -libfile "$lib_path" -force
+} # register_pkcs11_module
 
 
 main
