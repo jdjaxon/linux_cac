@@ -30,6 +30,14 @@ main ()
     BUNDLE_FILENAME="AllCerts.zip"
     CERT_URL="https://militarycac.com/maccerts/$BUNDLE_FILENAME"
 
+    # Security (feedback #17): pin the SHA256 digest of the certificate bundle.
+    # A spoofed or compromised download must never be imported as a trusted CA
+    # into browser NSS databases (that would enable silent MITM of user traffic).
+    # MAINTAINERS: set this to the verified SHA256 of the official AllCerts.zip,
+    # confirmed through an authoritative DoD PKI channel, and update it whenever
+    # the upstream bundle legitimately changes.
+    EXPECTED_BUNDLE_SHA256=""
+
     root_check
     browser_check
     mapfile -t databases < <(find "$ORIG_HOME" -name "$DB_FILENAME" 2>/dev/null | grep "firefox\|pki" | grep -v "Trash")
@@ -50,8 +58,36 @@ main ()
 
     # Pull all necessary files
     print_info "Downloading DoD certificates..."
-    wget -qP "$DWNLD_DIR" "$CERT_URL"
+    if ! wget -qP "$DWNLD_DIR" "$CERT_URL"
+    then
+        print_err "Failed to download $CERT_URL"
+        echo -e "\tExiting..."
+        exit "$E_DATABASE"
+    fi
     print_info "Done."
+
+    # Security (feedback #17): verify the bundle's integrity BEFORE any of its
+    # contents are unzipped or imported with trust flags ('-t TC'). Fail closed
+    # on a missing pinned digest, a failed download, or a checksum mismatch.
+    if [ -z "$EXPECTED_BUNDLE_SHA256" ]
+    then
+        print_err "No pinned SHA256 digest configured for $BUNDLE_FILENAME."
+        print_info "Refusing to import unverified certificates. Set EXPECTED_BUNDLE_SHA256 to the verified digest and re-run."
+        echo -e "\tExiting..."
+        exit "$E_DATABASE"
+    fi
+
+    ACTUAL_BUNDLE_SHA256="$(sha256sum "$DWNLD_DIR/$BUNDLE_FILENAME" 2>/dev/null | awk '{print $1}')"
+    if [ "$ACTUAL_BUNDLE_SHA256" != "$EXPECTED_BUNDLE_SHA256" ]
+    then
+        print_err "SHA256 verification FAILED for $BUNDLE_FILENAME."
+        print_info "Expected: $EXPECTED_BUNDLE_SHA256"
+        print_info "Actual:   ${ACTUAL_BUNDLE_SHA256:-<file missing or unreadable>}"
+        print_info "The download may be corrupted or tampered with. Refusing to import these certificates."
+        echo -e "\tExiting..."
+        exit "$E_DATABASE"
+    fi
+    print_info "Bundle integrity verified (${ACTUAL_BUNDLE_SHA256})."
 
     # Unzip cert bundle
     if [ -e "$DWNLD_DIR/$BUNDLE_FILENAME" ]
