@@ -70,10 +70,25 @@ its dependencies. Please download the script locally and review it before
 running it; see [Methods](#methods) for the recommended steps. The raw script
 is also available
 [here](https://raw.githubusercontent.com/jdjaxon/linux_cac/main/cac_setup.sh)
-if you prefer to read it in a browser. For transparency, the DoD certificates
-are downloaded from
-[here](https://militarycac.com/maccerts/AllCerts.zip), which are
-recommended by [militarycac](https://militarycac.com).
+if you prefer to read it in a browser.
+
+> [!warning]
+> **Trust anchor provenance:** the DoD certificates are downloaded from
+> [militarycac.com](https://militarycac.com/maccerts/AllCerts.zip)
+> (as recommended by [militarycac](https://militarycac.com)). These files are
+> *root trust anchors* for CAC-authenticated traffic; a tampered or
+> substituted archive would enable man-in-the-middle attacks. Prefer an
+> authoritative source whenever possible:
+>
+> - **Official DoD PKI/PKE site** — <https://public.cyber.mil/pki-pke/>
+>   (download the current "PKI CA Certificate Bundles",
+>   e.g. `DoD_PKE_CA_CA_Certs.zip`, and install those instead)
+> - **Distro-maintained packages** (e.g., `pki-base` on Debian-family
+>   systems) wherever your distribution ships DoD root certificates
+>
+> If you keep the default third-party download, verify the bundle's SHA-256
+> digest before running the setup script — see
+> [Verifying the DoD certificate bundle](#verifying-the-dod-certificate-bundle).
 
 > [!note]
 > - The automated installation requires `wget` and `unzip` to run and will
@@ -123,6 +138,31 @@ doing so executes unreviewed code from the network with root privileges.
 > [!note]
 > Always verify the integrity of the downloaded script with `sha256sum`
 > before executing it, especially when downloading over an untrusted network.
+
+#### Verifying the DoD certificate bundle
+
+The setup script pulls the DoD root certificates from
+[militarycac.com](https://militarycac.com/maccerts/AllCerts.zip). Before
+running the setup script, verify the bundle has not been tampered with:
+
+1. Download the bundle locally:
+    ```bash
+    wget https://militarycac.com/maccerts/AllCerts.zip
+    ```
+2. Compute its digest and compare it against the SHA-256 published with this
+   project's [releases](../../releases) for the version you are installing:
+    ```bash
+    sha256sum AllCerts.zip
+    ```
+3. If the digests differ, **do not run the setup script**. Report the
+   mismatch in an issue and install the certificates manually from the
+   authoritative [DoD PKI/PKE site](https://public.cyber.mil/pki-pke/)
+   instead.
+
+> [!note]
+> Maintainers: record the SHA-256 of the exact `AllCerts.zip` revision used
+> by each tagged release in the release notes so users always have a
+> trusted value to compare against.
 
 ## Known Issues
 - The `pkcs11-register` command sometimes does not behave as expected when run
@@ -224,6 +264,7 @@ See the [LICENSE](./LICENSE) file for details.
 
 
 ## References
+- https://public.cyber.mil/pki-pke/ (official DoD PKI/PKE — authoritative CA certificate bundles)
 - https://militarycac.com/linux.htm (this was my starting point)
 - https://chromium.googlesource.com/chromium/src.git/+/refs/heads/main/docs/linux/cert_management.md
 - https://firefox-source-docs.mozilla.org/security/nss/legacy/tools/nss_tools_certutil/index.html
