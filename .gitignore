@@ -1,0 +1,20 @@
+# PrizmForge local artifacts
+.PrizmForge/
+
+# Environment variables / secrets
+.env
+.env.*
+!.env.example
+
+# Private keys and certificates
+*.key
+*.pem
+*.crt
+*.p12
+*.pfx
+
+# Credential / secret files
+credentials.json
+secrets.yaml
+secrets.yml
+secrets.json
