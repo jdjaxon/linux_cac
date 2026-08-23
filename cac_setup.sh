@@ -211,10 +211,47 @@ run_firefox ()
 {
     print_info "Starting Firefox silently to complete post-install actions..."
     sudo -H -u "$SUDO_USER" firefox --headless --first-startup >/dev/null 2>&1 &
+    FF_PID=$!
     sleep 3
-    pkill -9 firefox
+    # Bug fix (feedback #19): terminate only the Firefox instance this script
+    # spawned, escalating SIGTERM -> SIGKILL. A root-run 'pkill -9 firefox'
+    # kills every matching process on the system (including other users'
+    # active sessions) and skips NSS SQLite checkpointing, risking corruption
+    # of the cert9.db databases this script depends on.
+    stop_browser "$FF_PID"
     sleep 1
 } # run_firefox
+
+
+# Bug fix (feedback #19): stop a browser process spawned by this script using
+# its PID instead of a global root 'pkill -9 <browser>', which would kill every
+# matching process on the system (including other users' active sessions).
+# SIGTERM is sent first so the browser can shut down cleanly and NSS can
+# checkpoint its SQLite databases (cert9.db); SIGKILL is used only as a last
+# resort after a grace period.
+stop_browser ()
+{
+    local pid=$1
+    local waited=0
+    local GRACE_SECONDS=10
+
+    if kill -0 "$pid" 2>/dev/null
+    then
+        kill -TERM "$pid" 2>/dev/null || true
+
+        while kill -0 "$pid" 2>/dev/null && [ "$waited" -lt "$GRACE_SECONDS" ]
+        do
+            sleep 1
+            waited=$((waited + 1))
+        done
+
+        # Escalate to SIGKILL only if the process refused to terminate
+        if kill -0 "$pid" 2>/dev/null
+        then
+            kill -KILL "$pid" 2>/dev/null || true
+        fi
+    fi
+} # stop_browser
 
 
 # Run Chrome to ensure .pki directory has been created
@@ -226,8 +263,11 @@ run_chrome ()
     # TODO: finish troubleshooting this
     print_info "Running Chrome to ensure it has completed post-install actions..."
     sudo -H -u "$SUDO_USER" google-chrome --headless --disable-gpu >/dev/null 2>&1 &
+    CHROME_PID=$!
     sleep 3
-    pkill -9 google-chrome
+    # Bug fix (feedback #19): terminate only the Chrome instance this script
+    # spawned, escalating SIGTERM -> SIGKILL (see stop_browser).
+    stop_browser "$CHROME_PID"
     sleep 1
     print_info "Done."
 } # run_chrome
