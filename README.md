@@ -66,10 +66,12 @@ Since Ubuntu 22.04, Firefox will only work if you allow the script to remove the
 >  Please make sure all browsers are closed before running the script.
 
 This script requires root privileges since it installs `opensc` package and
-its dependencies. Feel free to review the script
+its dependencies. Please download the script locally and review it before
+running it; see [Methods](#methods) for the recommended steps. The raw script
+is also available
 [here](https://raw.githubusercontent.com/jdjaxon/linux_cac/main/cac_setup.sh)
-if this makes you uncomfortable. For transparency, the
-the DoD certificates are downloaded from
+if you prefer to read it in a browser. For transparency, the DoD certificates
+are downloaded from
 [here](https://militarycac.com/maccerts/AllCerts.zip), which are
 recommended by [militarycac](https://militarycac.com).
 
@@ -82,15 +84,45 @@ recommended by [militarycac](https://militarycac.com).
 
 
 #### Methods
-- `wget`
-```bash
-sudo bash -c "$(wget https://raw.githubusercontent.com/jdjaxon/linux_cac/main/cac_setup.sh -O -)"
-```
+Download the setup script to a local file first, review its contents, and only
+then execute it explicitly. **Never pipe remote scripts directly into a
+privileged shell** (e.g., `curl ... | sudo bash` or `wget ... | sudo bash`);
+doing so executes unreviewed code from the network with root privileges.
 
-- `curl`
-```bash
-sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/jdjaxon/linux_cac/main/cac_setup.sh)"
-```
+1. **Download the script** with either tool:
+
+    - `wget`
+    ```bash
+    wget https://raw.githubusercontent.com/jdjaxon/linux_cac/main/cac_setup.sh
+    ```
+
+    - `curl`
+    ```bash
+    curl -fsSLO https://raw.githubusercontent.com/jdjaxon/linux_cac/main/cac_setup.sh
+    ```
+
+2. **Review the script** before running it:
+
+    ```bash
+    less cac_setup.sh
+    ```
+
+3. **Verify the checksum (recommended)** and compare the output against the
+   checksum published with the release:
+
+    ```bash
+    sha256sum cac_setup.sh
+    ```
+
+4. **Execute the script** after reviewing (and verifying) it:
+
+    ```bash
+    sudo bash cac_setup.sh
+    ```
+
+> [!note]
+> Always verify the integrity of the downloaded script with `sha256sum`
+> before executing it, especially when downloading over an untrusted network.
 
 ## Known Issues
 - The `pkcs11-register` command sometimes does not behave as expected when run
