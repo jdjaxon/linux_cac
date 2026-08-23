@@ -9,7 +9,13 @@ main ()
     E_NOTROOT=86                        # Non-root exit error
     E_BROWSER=87                        # Browser-related error (e.g. no browser installed)
     E_DATABASE=88                       # No database located
-    DWNLD_DIR="/tmp"                    # Location to place artifacts
+    # Security (feedback #16): use a secure, unpredictable working directory
+    # instead of a fixed path in world-writable /tmp. A predictable location
+    # lets a local attacker pre-create AllCerts.zip or AllCerts/ as symlinks,
+    # causing root-run wget/unzip to write through them (CWE-377/CWE-59).
+    # 'mktemp -d' creates a private (0700) directory owned by root.
+    DWNLD_DIR="$(mktemp -d)"
+    trap 'rm -rf "$DWNLD_DIR"' EXIT     # Always clean up artifacts on any exit path
 
     chrome_exists=false                 # Google Chrome is installed
     ff_exists=false                     # Firefox is installed
@@ -98,7 +104,7 @@ main ()
     rm -rf "${DWNLD_DIR:?}"/{"$BUNDLE_FILENAME","$CERT_FILENAME"} 2>/dev/null
     if [ "$?" -ne "$EXIT_SUCCESS" ]
     then
-        print_err "Failed to remove artifacts. Artifacts were stored in ${DWNLD_DIR}."
+        print_err "Failed to remove some artifacts. The EXIT trap will remove ${DWNLD_DIR}."
     else
         print_info "Done. A reboot may be required."
     fi
