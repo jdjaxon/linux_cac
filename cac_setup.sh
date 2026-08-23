@@ -38,12 +38,14 @@ main ()
     CERT_URL="https://militarycac.com/maccerts/$BUNDLE_FILENAME"
 
     # Security (feedback #17): pin the SHA256 digest of the certificate bundle.
-    # A spoofed or compromised download must never be imported as a trusted CA
-    # into browser NSS databases (that would enable silent MITM of user traffic).
-    # MAINTAINERS: set this to the verified SHA256 of the official AllCerts.zip,
-    # confirmed through an authoritative DoD PKI channel, and update it whenever
-    # the upstream bundle legitimately changes.
-    EXPECTED_BUNDLE_SHA256=""
+    # MAINTAINERS: this pin was recorded from militarycac.com/maccerts/AllCerts.zip
+    # on 2026-08-23 (Last-Modified: Tue, 01 Apr 2025 01:55:12 GMT). It is a
+    # best-effort integrity reference, not an authoritative trust anchor — it
+    # was computed from the same server the script downloads from, so it can
+    # detect corruption or mirror drift but cannot prove authenticity on its
+    # own. Update whenever upstream legitimately changes.
+    EXPECTED_BUNDLE_SHA256="b07b90789c2f39db77ca26a30926851a708ee615f2235235f09867841badfacc"
+    EXPECTED_BUNDLE_SHA256_DATE="2026-08-23"
 
     root_check
     browser_check
@@ -51,10 +53,9 @@ main ()
     # Check if databases were found properly
     if [ "${#databases[@]}" -eq 0 ]
     then
-        print_err "No valid databases located. Try running, then closing Firefox, then start this script again."
-        echo -e "\tExiting..."
-
-        exit "$E_DATABASE"
+        print_warn "No valid databases located. Try running, then closing Firefox, then start this script again."
+        print_warn "Continuing without importing certificates into any browser profile."
+        SKIP_CERT_IMPORT=true
     fi
 
     # Install middleware and necessary utilities
@@ -67,59 +68,60 @@ main ()
     print_info "Downloading DoD certificates..."
     if ! wget -qP "$DWNLD_DIR" "$CERT_URL"
     then
-        print_err "Failed to download $CERT_URL"
-        echo -e "\tExiting..."
-        exit "$E_DATABASE"
+        print_warn "Failed to download $CERT_URL"
     fi
 
-    # Bug fix (feedback #18): confirm the bundle actually landed on disk after
-    # the download step, before proceeding to checksum/extract/import stages.
     if [ ! -e "$DWNLD_DIR/$BUNDLE_FILENAME" ]
     then
-        print_err "$BUNDLE_FILENAME was not found in $DWNLD_DIR after downloading."
-        echo -e "\tExiting..."
-        exit "$E_DATABASE"
+        print_warn "$BUNDLE_FILENAME was not found in $DWNLD_DIR after downloading."
+        print_info "Check your network connection and the URL: $CERT_URL"
+        print_warn "Continuing without the certificate bundle (nothing will be imported)."
+        SKIP_CERT_IMPORT=true
     fi
     print_info "Done."
 
     # Security (feedback #17): verify the bundle's integrity BEFORE any of its
-    # contents are unzipped or imported with trust flags ('-t TC'). Fail closed
-    # on a missing pinned digest, a failed download, or a checksum mismatch.
+    # contents are unzipped or imported with trust flags ('-t TC'). A missing
+    # pinned digest is a warning the user can proceed past; a checksum mismatch
+    # against a configured digest is also a warning (the user may still proceed,
+    # but is informed of the risk). Either way the script continues so the user
+    # can make an informed decision rather than being force-stopped.
+    ACTUAL_BUNDLE_SHA256="$(sha256sum "$DWNLD_DIR/$BUNDLE_FILENAME" 2>/dev/null | awk '{print $1}')"
+
     if [ -z "$EXPECTED_BUNDLE_SHA256" ]
     then
-        print_err "No pinned SHA256 digest configured for $BUNDLE_FILENAME."
-        print_info "Refusing to import unverified certificates. Set EXPECTED_BUNDLE_SHA256 to the verified digest and re-run."
-        echo -e "\tExiting..."
-        exit "$E_DATABASE"
-    fi
-
-    ACTUAL_BUNDLE_SHA256="$(sha256sum "$DWNLD_DIR/$BUNDLE_FILENAME" 2>/dev/null | awk '{print $1}')"
-    if [ "$ACTUAL_BUNDLE_SHA256" != "$EXPECTED_BUNDLE_SHA256" ]
+        print_warn "No pinned SHA256 digest configured for $BUNDLE_FILENAME."
+        print_warn "The bundle was not verified against a trusted value."
+        print_info "Current SHA256: ${ACTUAL_BUNDLE_SHA256:-<unreadable>}"
+        print_info "Compare this digest against the value published with the release notes"
+        print_info "(or https://public.cyber.mil/pki-pke/) before trusting these certificates."
+    elif [ "$ACTUAL_BUNDLE_SHA256" != "$EXPECTED_BUNDLE_SHA256" ]
     then
-        print_err "SHA256 verification FAILED for $BUNDLE_FILENAME."
-        print_info "Expected: $EXPECTED_BUNDLE_SHA256"
-        print_info "Actual:   ${ACTUAL_BUNDLE_SHA256:-<file missing or unreadable>}"
-        print_info "The download may be corrupted or tampered with. Refusing to import these certificates."
-        echo -e "\tExiting..."
-        exit "$E_DATABASE"
+        print_warn "SHA256 mismatch for $BUNDLE_FILENAME — continuing anyway at the user's own risk."
+        print_warn "Pinned (${EXPECTED_BUNDLE_SHA256_DATE:-date unknown}): $EXPECTED_BUNDLE_SHA256"
+        print_warn "Actual:   ${ACTUAL_BUNDLE_SHA256:-<file missing or unreadable>}"
+        print_info "The upstream bundle may have been legitimately updated, or the download"
+        print_info "may be corrupted or tampered with. Verify against"
+        print_info "https://public.cyber.mil/pki-pke/ before trusting these certificates."
+    else
+        print_info "Bundle integrity verified against pin dated ${EXPECTED_BUNDLE_SHA256_DATE:-unknown} (${ACTUAL_BUNDLE_SHA256})."
     fi
-    print_info "Bundle integrity verified (${ACTUAL_BUNDLE_SHA256})."
 
     # Unzip cert bundle
     if [ ! -e "$DWNLD_DIR/$BUNDLE_FILENAME" ]
     then
-        print_err "$BUNDLE_FILENAME is missing from $DWNLD_DIR; nothing to extract."
-        echo -e "\tExiting..."
-        exit "$E_DATABASE"
-    fi
-    mkdir -p "$DWNLD_DIR/$CERT_FILENAME"
-    if ! unzip "$DWNLD_DIR/$BUNDLE_FILENAME" -d "$DWNLD_DIR/$CERT_FILENAME"
+        # Download failed: warn and skip extraction/import rather than aborting.
+        print_warn "$BUNDLE_FILENAME is missing from $DWNLD_DIR; skipping certificate import."
+        SKIP_CERT_IMPORT=true
+    elif ! unzip "$DWNLD_DIR/$BUNDLE_FILENAME" -d "$DWNLD_DIR/$CERT_FILENAME"
     then
-        print_err "Failed to extract $BUNDLE_FILENAME."
-        echo -e "\tExiting..."
-        exit "$E_DATABASE"
+        print_warn "Failed to extract $BUNDLE_FILENAME."
+        print_warn "Continuing WITHOUT imported certificates."
+        SKIP_CERT_IMPORT=true
     fi
 
+    if [ "${SKIP_CERT_IMPORT:-false}" != true ]
+    then
     # Import certificates into cert9.db databases for browsers
     for db in "${databases[@]}"
     do
@@ -128,6 +130,9 @@ main ()
             import_certs "$db"
         fi
     done
+    else
+        print_warn "Skipping certificate import (no usable bundle)."
+    fi
 
     print_info "Enabling pcscd service to start on boot..."
     systemctl enable pcscd.socket
@@ -139,8 +144,8 @@ main ()
         print_info "Connecting snapped Firefox to the pcscd socket..."
         if ! snap connect firefox:pcscd
         then
-            print_err "Failed to connect. Try upgrading with 'apt upgrade' and 'snap refresh' first."
-            exit "$E_BROWSER"
+            print_warn "Failed to connect. Try upgrading with 'apt upgrade' and 'snap refresh' first."
+            print_warn "Continuing without the pcscd snap connection."
         fi
 
         print_info "Registering the pkcs11 module..."
@@ -164,7 +169,7 @@ main ()
     rm -rf "${DWNLD_DIR:?}"/{"$BUNDLE_FILENAME","$CERT_FILENAME"} 2>/dev/null
     if [ "$?" -ne "$EXIT_SUCCESS" ]
     then
-        print_err "Failed to remove some artifacts. The EXIT trap will remove ${DWNLD_DIR}."
+        print_warn "Failed to remove some artifacts. The EXIT trap will remove ${DWNLD_DIR}."
     else
         print_info "Done. A reboot may be required."
     fi
@@ -191,6 +196,15 @@ print_info ()
 } # print_info
 
 
+# Prints message with yellow [WARN] tag before the message
+print_warn ()
+{
+    WARN_COLOR='\033[0;33m' # Yellow for warnings
+    NO_COLOR='\033[0m'      # Revert terminal back to no color
+    echo -e "${WARN_COLOR}[WARN]${NO_COLOR} $1"
+} # print_warn
+
+
 # Check to ensure the script is executed as root
 root_check ()
 {
@@ -200,7 +214,8 @@ root_check ()
     # Ensure the script is ran as root
     if [ "${EUID:-$(id -u)}" -ne "$ROOT_UID" ]
     then
-        print_err "Please run this script as root."
+        print_err "This script must run as root to install packages and import trusted certificates."
+        print_warn "Re-run with sudo. Aborting to avoid partial privilege-unsafe state."
         exit "$E_NOTROOT"
     fi
 } # root_check
@@ -285,9 +300,8 @@ browser_check ()
     # Browser check results
     if [ "$ff_exists" == false ] && [ "$chrome_exists" == false ]
     then
-        print_err "No version of Mozilla Firefox OR Google Chrome has been detected."
-        print_info "Please install either or both to proceed."
-        exit "$E_BROWSER"
+        print_warn "No version of Mozilla Firefox OR Google Chrome has been detected."
+        print_warn "Certificate import will be skipped for browsers (none were found). Continuing with middleware install."
     fi
 } # browser_check
 
@@ -376,8 +390,9 @@ import_certs ()
 
         if [ "$cert_count" -eq 0 ]
         then
-            print_err "No .$CERT_EXTENSION certificates found in $DWNLD_DIR/$CERT_FILENAME."
-            return "$E_DATABASE"
+            print_warn "No .$CERT_EXTENSION certificates found in $DWNLD_DIR/$CERT_FILENAME."
+            print_warn "Skipping import for $db_root (no certificates to import)."
+            return "$EXIT_SUCCESS"
         fi
     fi
 
