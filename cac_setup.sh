@@ -3,6 +3,13 @@
 # cac_setup.sh
 # Description: Setup a Linux environment for Common Access Card use.
 
+# Bug fix (feedback #18): enable strict mode so failures of wget, apt, and
+# unzip abort the script instead of being silently ignored. Without this, a
+# failed download/extraction left the certificate glob unexpanded and certutil
+# was invoked once per database with a literal '*' filename while the script
+# still reported success.
+set -euo pipefail
+
 main ()
 {
     EXIT_SUCCESS=0                      # Success exit code
@@ -64,6 +71,15 @@ main ()
         echo -e "\tExiting..."
         exit "$E_DATABASE"
     fi
+
+    # Bug fix (feedback #18): confirm the bundle actually landed on disk after
+    # the download step, before proceeding to checksum/extract/import stages.
+    if [ ! -e "$DWNLD_DIR/$BUNDLE_FILENAME" ]
+    then
+        print_err "$BUNDLE_FILENAME was not found in $DWNLD_DIR after downloading."
+        echo -e "\tExiting..."
+        exit "$E_DATABASE"
+    fi
     print_info "Done."
 
     # Security (feedback #17): verify the bundle's integrity BEFORE any of its
@@ -90,10 +106,18 @@ main ()
     print_info "Bundle integrity verified (${ACTUAL_BUNDLE_SHA256})."
 
     # Unzip cert bundle
-    if [ -e "$DWNLD_DIR/$BUNDLE_FILENAME" ]
+    if [ ! -e "$DWNLD_DIR/$BUNDLE_FILENAME" ]
     then
-        mkdir -p "$DWNLD_DIR/$CERT_FILENAME"
-        unzip "$DWNLD_DIR/$BUNDLE_FILENAME" -d "$DWNLD_DIR/$CERT_FILENAME"
+        print_err "$BUNDLE_FILENAME is missing from $DWNLD_DIR; nothing to extract."
+        echo -e "\tExiting..."
+        exit "$E_DATABASE"
+    fi
+    mkdir -p "$DWNLD_DIR/$CERT_FILENAME"
+    if ! unzip "$DWNLD_DIR/$BUNDLE_FILENAME" -d "$DWNLD_DIR/$CERT_FILENAME"
+    then
+        print_err "Failed to extract $BUNDLE_FILENAME."
+        echo -e "\tExiting..."
+        exit "$E_DATABASE"
     fi
 
     # Import certificates into cert9.db databases for browsers
@@ -298,11 +322,23 @@ import_certs ()
         print_info "Loading certificates into $db_root "
         echo
 
+        # Bug fix (feedback #18): guard the glob so certutil is never invoked
+        # with a literal '*' filename, and fail clearly when no certificates
+        # were extracted at all.
+        local cert_count=0
         for cert in "$DWNLD_DIR/$CERT_FILENAME/"*."$CERT_EXTENSION"
         do
+            [ -e "$cert" ] || continue
             echo "Importing $cert"
             certutil -d sql:"$db_root" -A -t TC -n "$cert" -i "$cert"
+            cert_count=$((cert_count + 1))
         done
+
+        if [ "$cert_count" -eq 0 ]
+        then
+            print_err "No .$CERT_EXTENSION certificates found in $DWNLD_DIR/$CERT_FILENAME."
+            return "$E_DATABASE"
+        fi
     fi
 
     print_info "Done."
