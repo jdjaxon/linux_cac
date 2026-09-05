@@ -1,6 +1,17 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
+# Run cac_setup.sh and record its exit code plus a snapshot of the state it
+# owns. The suffix distinguishes the first run ("") from the rerun ("_2") so
+# the two snapshots can be diffed for idempotency.
+def cac_setup_run(suffix = "")
+  <<~SHELL
+    SUDO_USER=vagrant bash /vagrant_root/cac_setup.sh
+    echo $? > /tmp/cac_setup_exit_code#{suffix}
+    bash /vagrant_root/test/cac_state.sh > /tmp/cac_state#{suffix}
+  SHELL
+end
+
 Vagrant.configure("2") do |config|
   # expose repo root to the VMs
   config.vm.synced_folder "..", "/vagrant_root"
@@ -62,14 +73,19 @@ Vagrant.configure("2") do |config|
       SHELL
 
       # 3: run cac_setup.sh
-      node.vm.provision "cac_setup", type: "shell", inline: <<~SHELL
-        SUDO_USER=vagrant bash /vagrant_root/cac_setup.sh
-        echo $? > /tmp/cac_setup_exit_code
-      SHELL
+      node.vm.provision "cac_setup", type: "shell", inline: cac_setup_run()
 
       # 4: run the tests
       node.vm.provision "test", type: "shell", inline: <<~SHELL
         bats /vagrant_root/test/test.bats
+      SHELL
+
+      # 5: run cac_setup.sh a second time over the state the first run left
+      node.vm.provision "cac_setup_rerun", type: "shell", inline: cac_setup_run("_2")
+
+      # 6: run the idempotency tests
+      node.vm.provision "test_idempotence", type: "shell", inline: <<~SHELL
+        bats /vagrant_root/test/idempotence.bats
       SHELL
     end
   end
