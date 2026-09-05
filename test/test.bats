@@ -3,26 +3,10 @@
 # test.bats
 # Description: tests for cac_setup.sh
 
-# ---------------------------------------------------------------------------
-# Helper
-# ---------------------------------------------------------------------------
-
-ff_profile() {
-  find /home/vagrant -name "cert9.db" 2>/dev/null \
-    | grep "firefox" | grep -v "Trash" \
-    | head -1 | xargs -I{} dirname {}
-}
-
-chrome_profile() {
-  echo "/home/vagrant/.local/share/pki/nssdb"
-}
-
-# ---------------------------------------------------------------------------
-# Tests
-# ---------------------------------------------------------------------------
+. "${BATS_TEST_DIRNAME}/common.sh"
 
 @test "cac_setup.sh exited successfully" {
-  run cat /tmp/cac_setup_exit_code
+  run cat "$EXIT_CODE_FILE"
   [ "$status" -eq 0 ]
   [ "$output" = "0" ]
 }
@@ -43,30 +27,22 @@ chrome_profile() {
   profile=$(ff_profile)
   [ -n "$profile" ]
 
-  run modutil -dbdir sql:${profile} -list 2>&1
-  [ "$status" -eq 0 ]
-
-  echo "$output" | grep -qi "CAC Module"
+  [ "$(cac_module_count "$profile")" -gt 0 ]
 }
 
 @test "DoD certificates imported into Firefox profile" {
-  local profile cert_count
+  local profile
   profile=$(ff_profile)
   [ -n "$profile" ]
 
-  cert_count=$(certutil -d "sql:${profile}" -L 2>/dev/null | grep -c '\.cer' || echo 0)
   # arbitrary number
-  [ "$cert_count" -gt 10 ]
+  [ "$(cert_count "$profile")" -gt 10 ]
 }
 
 @test "PKCS11 module registered in Chrome" {
-  run modutil -dbdir "sql:$(chrome_profile)" -list 2>&1
-  [ "$status" -eq 0 ]
-  echo "$output" | grep -qi "CAC Module"
+  [ "$(cac_module_count "$(chrome_profile)")" -gt 0 ]
 }
 
 @test "DoD certificates imported into Chrome profile" {
-  local cert_count
-  cert_count=$(certutil -d "sql:$(chrome_profile)" -L 2>/dev/null | grep -c '\.cer' || echo 0)
-  [ "$cert_count" -gt 10 ]
+  [ "$(cert_count "$(chrome_profile)")" -gt 10 ]
 }

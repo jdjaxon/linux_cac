@@ -57,10 +57,7 @@ Each VM is provisioned in six steps, each runnable on its own via
 | ------------------ | --------------------------------------------------------- |
 | `pre_setup`        | installs Firefox and Chrome                                |
 | `install_bats`     | installs bats                                              |
-| `cac_setup`        | runs `cac_setup.sh`, records its exit code and a snapshot of the state it owns (`test/cac_state.sh`) |
+| `cac_setup`        | `run_cac_setup.sh` — runs `cac_setup.sh`, records its exit code and a snapshot of the state it owns (`cac_state.sh`) |
 | `test`             | runs `test.bats` against that state                        |
-| `cac_setup_rerun`  | runs `cac_setup.sh` a second time, recording a second exit code and snapshot |
+| `cac_setup_rerun`  | `run_cac_setup.sh _2` — the same, a second time, recorded under a `_2` suffix |
 | `test_idempotence` | runs `idempotence.bats`, which diffs the two snapshots      |
-
-The idempotency phase re-runs the full script, so it re-downloads the
-certificate bundle (network required) and roughly doubles the total run time.

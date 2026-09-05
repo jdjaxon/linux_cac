@@ -4,21 +4,10 @@
 # Description: dump every piece of state cac_setup.sh owns, in a stable order,
 #              so that two runs of the script can be diffed against each other
 
-TARGET_HOME="${TARGET_HOME:-/home/vagrant}"
-DB_FILENAME="cert9.db"
-CHROME_NSSDB="${TARGET_HOME}/.local/share/pki/nssdb"
-DWNLD_DIR="/tmp"
-BUNDLE_FILENAME="AllCerts.zip"
-CERT_FILENAME="AllCerts"
+TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-
-# Locate the Firefox profile directory holding the NSS database
-ff_profile ()
-{
-    find "$TARGET_HOME" -name "$DB_FILENAME" 2>/dev/null \
-        | grep "firefox" | grep -v "Trash" \
-        | head -1 | xargs -I{} dirname {}
-} # ff_profile
+# shellcheck source=test/common.sh
+. "$TEST_DIR/common.sh"
 
 
 # dump the PKCS11 modules and certificates of a single NSS database directory
@@ -44,13 +33,10 @@ main ()
 
     echo "== pcscd.socket enabled: $(systemctl is-enabled pcscd.socket 2>&1)"
 
-    for db_dir in "$(ff_profile)" "$CHROME_NSSDB"
+    while read -r db_dir
     do
-        if [ -n "$db_dir" ] && [ -d "$db_dir" ]
-        then
-            dump_nssdb "$db_dir"
-        fi
-    done
+        dump_nssdb "$db_dir"
+    done < <(nss_dbs)
 
     # the script is expected to clean up after itself on every run
     echo "== artifacts"
