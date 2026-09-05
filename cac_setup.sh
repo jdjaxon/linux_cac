@@ -3,12 +3,15 @@
 # cac_setup.sh
 # Description: Setup a Linux environment for Common Access Card use.
 
+set -euo pipefail
+
 main ()
 {
     EXIT_SUCCESS=0                      # Success exit code
     E_NOTROOT=86                        # Non-root exit error
     E_BROWSER=87                        # Browser-related error (e.g. no browser installed)
     E_DATABASE=88                       # No database located
+    E_NOPKCS11=89                       # opensc not found
     DWNLD_DIR="/tmp"                    # Location to place artifacts
 
     chrome_exists=false                 # Google Chrome is installed
@@ -18,7 +21,6 @@ main ()
 
     ORIG_HOME="$(getent passwd "$SUDO_USER" | cut -d: -f6)"
     CERT_EXTENSION="cer"
-    # PKCS_FILENAME="pkcs11.txt"
     DB_FILENAME="cert9.db"
     CERT_FILENAME="AllCerts"
     BUNDLE_FILENAME="AllCerts.zip"
@@ -38,20 +40,24 @@ main ()
 
     # Install middleware and necessary utilities
     print_info "Installing middleware and essential utilities..."
-    apt update
-    DEBIAN_FRONTEND=noninteractive apt install -y libpcsclite1 pcscd libccid libpcsc-perl pcsc-tools libnss3-tools unzip wget opensc
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y libpcsclite1 pcscd libccid libpcsc-perl pcsc-tools libnss3-tools unzip wget opensc
     print_info "Done"
+
+    # A previous run may have aborted before reaching its cleanup. Start from a
+    # clean slate so this run cannot trip over what that one left behind.
+    rm -rf "${DWNLD_DIR:?}"/{"$BUNDLE_FILENAME","$CERT_FILENAME"}
 
     # Pull all necessary files
     print_info "Downloading DoD certificates..."
-    wget -qP "$DWNLD_DIR" "$CERT_URL"
+    wget -q -O "$DWNLD_DIR/$BUNDLE_FILENAME" "$CERT_URL"
     print_info "Done."
 
     # Unzip cert bundle
     if [ -e "$DWNLD_DIR/$BUNDLE_FILENAME" ]
     then
         mkdir -p "$DWNLD_DIR/$CERT_FILENAME"
-        unzip "$DWNLD_DIR/$BUNDLE_FILENAME" -d "$DWNLD_DIR/$CERT_FILENAME"
+        unzip -o "$DWNLD_DIR/$BUNDLE_FILENAME" -d "$DWNLD_DIR/$CERT_FILENAME"
     fi
 
     # Import certificates into cert9.db databases for browsers
@@ -67,7 +73,7 @@ main ()
     systemctl enable pcscd.socket
     print_info "Done"
 
-    # Handle snapped firefox
+    # Connect snapped Firefox to the pcscd socket
     if [ "$snap_ff" == true ]
     then
         print_info "Connecting snapped Firefox to the pcscd socket..."
@@ -76,31 +82,32 @@ main ()
             print_err "Failed to connect. Try upgrading with 'apt upgrade' and 'snap refresh' first."
             exit "$E_BROWSER"
         fi
+    fi
 
-        print_info "Registering the pkcs11 module..."
-        sudo -H -u "$SUDO_USER" modutil -dbdir "sql:$ff_profile_dir" \
-            -add "CAC Module" -libfile /usr/lib/x86_64-linux-gnu/opensc-pkcs11.so -force
+    # Register the PKCS11 module in every detected NSS database (Firefox + Chrome)
+    opensc_lib=$(find_opensc_pkcs11)
+    if [ -z "$opensc_lib" ]
+    then
+        print_err "Could not locate opensc-pkcs11.so to register the PKCS11 module."
+        exit "$E_NOPKCS11"
     else
-        print_info "Registering CAC module with PKSC11..."
-        pkcs11-register
-        print_info "Done"
-
-        # NOTE: Keeping this temporarily to test `pkcs11-register`.
-        # if ! grep -Pzo 'library=/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so\nname=CAC Module\n' "$db_root/$PKCS_FILENAME" >/dev/null
-        # then
-        #     printf "library=/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so\nname=CAC Module\n" >> "$db_root/$PKCS_FILENAME"
-        # fi
+        for db in "${databases[@]}"
+        do
+            if [ -n "$db" ]
+            then
+                register_pkcs11_module "$(dirname "$db")" "$opensc_lib"
+            fi
+        done
     fi
 
 
     # Remove artifacts
     print_info "Removing artifacts..."
-    rm -rf "${DWNLD_DIR:?}"/{"$BUNDLE_FILENAME","$CERT_FILENAME"} 2>/dev/null
-    if [ "$?" -ne "$EXIT_SUCCESS" ]
+    if rm -rf "${DWNLD_DIR:?}"/{"$BUNDLE_FILENAME","$CERT_FILENAME"} 2>/dev/null
     then
-        print_err "Failed to remove artifacts. Artifacts were stored in ${DWNLD_DIR}."
-    else
         print_info "Done. A reboot may be required."
+    else
+        print_err "Failed to remove artifacts. Artifacts were stored in ${DWNLD_DIR}."
     fi
 
     exit "$EXIT_SUCCESS"
@@ -146,7 +153,7 @@ run_firefox ()
     print_info "Starting Firefox silently to complete post-install actions..."
     sudo -H -u "$SUDO_USER" firefox --headless --first-startup >/dev/null 2>&1 &
     sleep 3
-    pkill -9 firefox
+    pkill -9 firefox || true
     sleep 1
 } # run_firefox
 
@@ -157,11 +164,10 @@ run_chrome ()
     # NOTE: this is the original
     # sudo -H -u "$SUDO_USER" bash -c 'google-chrome --headless --disable-gpu >/dev/null 2>&1 &'
 
-    # TODO: finish troubleshooting this
     print_info "Running Chrome to ensure it has completed post-install actions..."
     sudo -H -u "$SUDO_USER" google-chrome --headless --disable-gpu >/dev/null 2>&1 &
     sleep 3
-    pkill -9 google-chrome
+    pkill -9 google-chrome || true
     sleep 1
     print_info "Done."
 } # run_chrome
@@ -266,6 +272,43 @@ import_certs ()
     print_info "Done."
     echo
 } # import_certs
+
+
+# Locate opensc-pkcs11.so on the system
+find_opensc_pkcs11 ()
+{
+    local lib_path
+
+    lib_path=$(dpkg -L opensc 2>/dev/null | grep 'opensc-pkcs11\.so$' | head -1) || true
+    if [ -z "$lib_path" ]
+    then
+        # potential for non-debian-based systems
+        lib_path=$(find /usr/lib /usr/local/lib -name 'opensc-pkcs11.so' 2>/dev/null | head -1) || true
+    fi
+    echo "$lib_path"
+} # find_opensc_pkcs11
+
+
+# Register opensc-pkcs11.so as a PKCS11 module in a single NSS database dir.
+register_pkcs11_module ()
+{
+    local db_dir="$1"
+    local lib_path="$2"
+
+    # modutil refuses to add a module that is already registered, so drop any
+    # previous registration first. This also refreshes a stale library path.
+    if sudo -H -u "$SUDO_USER" modutil -dbdir "sql:${db_dir}" -list 2>/dev/null \
+        | grep -q "CAC Module"
+    then
+        print_info "Removing previous PKCS11 module registration in ${db_dir}..."
+        sudo -H -u "$SUDO_USER" modutil -dbdir "sql:${db_dir}" \
+            -delete "CAC Module" -force
+    fi
+
+    print_info "Registering PKCS11 module in ${db_dir}..."
+    sudo -H -u "$SUDO_USER" modutil -dbdir "sql:${db_dir}" \
+        -add "CAC Module" -libfile "$lib_path" -force
+} # register_pkcs11_module
 
 
 main

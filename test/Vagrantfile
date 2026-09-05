@@ -1,0 +1,80 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# where the repo root is mounted inside the VMs
+GUEST_REPO = "/vagrant_root"
+
+Vagrant.configure("2") do |config|
+  # expose repo root to the VMs
+  config.vm.synced_folder "..", GUEST_REPO
+
+  DISTROS = {
+    "ubuntu2404" => {
+      box: "cloud-image/ubuntu-24.04",
+      box_version: "20260323.0.0",
+      pre_setup: <<~SHELL
+        snap install firefox
+        wget -qO /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+        apt-get update
+        apt-get install -y /tmp/chrome.deb
+      SHELL
+    },
+
+    "debian13" => {
+      box: "cloud-image/debian-13",
+      box_version: "20260831.2587.0",
+      pre_setup: <<~SHELL
+        apt-get update
+        apt-get install -qy firefox-esr
+        wget -qO /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+        apt-get install -y /tmp/chrome.deb
+      SHELL
+    }
+  }
+
+  DISTROS.each do |name, cfg|
+    config.vm.define name do |node|
+      node.vm.box = cfg[:box]
+      node.vm.box_version = cfg[:box_version]
+
+      node.vm.cloud_init do |cloud_init|
+        cloud_init.content_type = "text/cloud-config"
+        cloud_init.inline = <<-EOF
+          timezone: America/New_York
+          package_update: true
+        EOF
+      end
+
+      node.vm.provider :virtualbox do |vb|
+        vb.memory = "2048"
+        vb.cpus   = 2
+        vb.name   = "linux_cac_#{name}"
+      end
+
+      node.vm.provider :libvirt do |lv|
+        lv.memory = 2048
+        lv.cpus   = 2
+      end
+
+      # 1: install browsers
+      node.vm.provision "pre_setup", type: "shell", inline: cfg[:pre_setup]
+
+      # 2: install bats
+      node.vm.provision "install_bats", type: "shell", inline: <<~SHELL
+        apt-get install -y bats
+      SHELL
+
+      # 3: run cac_setup.sh
+      node.vm.provision "cac_setup", type: "shell", inline: "bash #{GUEST_REPO}/test/run_cac_setup.sh"
+
+      # 4: run the tests
+      node.vm.provision "test", type: "shell", inline: "bats #{GUEST_REPO}/test/test.bats"
+
+      # 5: run cac_setup.sh a second time over the state the first run left
+      node.vm.provision "cac_setup_rerun", type: "shell", inline: "bash #{GUEST_REPO}/test/run_cac_setup.sh _2"
+
+      # 6: run the idempotency tests
+      node.vm.provision "test_idempotence", type: "shell", inline: "bats #{GUEST_REPO}/test/idempotence.bats"
+    end
+  end
+end
