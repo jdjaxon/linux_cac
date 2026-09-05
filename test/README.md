@@ -13,22 +13,29 @@ distribution versions.
 ## Prerequisites
 
 - vagrant
-- virtualbox (other backends, e.g. QEMU, are possible but would require changes
-  to the `Vagrantfile`)
+- a VM provider, one of:
+  - virtualbox
+  - libvirt + qemu-kvm (system `libvirtd` running, user in `libvirt` group, the
+    `vagrant-libvirt` plugin)
 - `genisoimage` or whichever package provides `mkisofs`
 - web connectivity
 
 ## Usage
 
 ```bash
-# run all VMs
+# run all VMs (uses vagrant's default provider)
 vagrant up
+
+# use libvirt instead of the default provider
+vagrant up --provider=libvirt
+# or persist the choice for the session
+export VAGRANT_DEFAULT_PROVIDER=libvirt
 
 # run a specific VM
 vagrant up ubuntu2404
 
-# rerun tests only
-vagrant provision ubuntu2404 --provision-with test
+# rerun cac_setup.sh and tests only
+vagrant provision ubuntu2404 --provision-with cac_setup,test
 
 # wipe clean
 vagrant destroy
